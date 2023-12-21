@@ -23,6 +23,9 @@ eumdac search -c $PRODUCT --start $START_TIME --end $END_TIME > products.txt
 # Download the products without saving output to a log file
 eumdac download -c $PRODUCT -p @products.txt -o $DOWNLOAD_DIR --limit 3
 
+# Find and unzip .nat files in the same directory
+find "$DOWNLOAD_DIR" -name '*.zip' -exec sh -c 'unzip -j "$1" "*.nat" -d "$2"' sh {} "$DOWNLOAD_DIR" \;
+
 # End time
 end_time=$(date +%s)
 

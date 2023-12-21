@@ -7,9 +7,11 @@ import requests
 import logging
 import concurrent.futures
 
+# Start time
+begin_time = time.time()
 
 # Define the download directory
-download_dir = '/home/daniele/Documenti/PhD_Cologne/Case Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_EXPATSdomain_proj/'  
+download_dir = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor/'  
 os.makedirs(download_dir, exist_ok=True)
 
 # Basic configuration of logging 
@@ -73,8 +75,9 @@ logging.info(f"{selected_collection} - {selected_collection.title}")
 
 # Define time span and geographical coordinates --> Ahr Floods July 2021
 start = datetime.datetime(2021, 7, 14, 12, 0)
-end = datetime.datetime(2021, 7, 15, 12, 0)
-north, south, east, west = 51.5, 42, 16, 5  
+end = datetime.datetime(2021, 7, 14, 15, 0)
+#north, south, east, west = 51.5, 42, 16, 5  #expats
+north, south, east, west = 52, 48, 9, 5  #Germany Flood
 
 # Search for data in the specified time span
 data_items = selected_collection.search(dtstart=start, dtend=end)
@@ -195,3 +198,15 @@ for item in data_items:
         logging.error("Request Error during customisation deletion:", error)
 
 logging.info("Data processing complete.")
+
+# End time
+end_time = time.time()
+
+# Calculate elapsed time
+elapsed_time = end_time - begin_time
+# Path to the text file where you want to save the elapsed time
+output_file_path = download_dir+'elapsed_time_data_tailor.txt'
+
+# Write elapsed time to the file
+with open(output_file_path, 'w') as file:
+    print(f"Elapsed time: {elapsed_time} seconds", file=file)
