@@ -47,8 +47,11 @@ def plot_msg(lons, lats, variable, label, cmap='Greys', vmin=None, vmax=None, ti
     gl.xlabel_style = {'fontsize': 14}
     gl.ylabel_style = {'fontsize': 14}
 
-    pc = ax.pcolormesh(lons,lats,variable, cmap=cmap, vmin=vmin if vmin is not None else np.min(variable), 
-                       vmax=vmax if vmax is not None else np.max(variable))
+    #pc = ax.pcolormesh(lons,lats,variable, cmap=cmap, vmin=vmin if vmin is not None else np.min(variable), 
+    #                   vmax=vmax if vmax is not None else np.max(variable))
+    mesh = plt.contourf(lons, lats, variable,cmap='gist_gray',transform=ccrs.PlateCarree()) 
+    # Add colorbar with reduced size
+    cbar = plt.colorbar(mesh, label='Brightness Temperature (K)', shrink=0.6)
     #vmin, vmax=220.,
     plt.tick_params(axis='both',which='major',labelsize=14)
 
@@ -56,7 +59,7 @@ def plot_msg(lons, lats, variable, label, cmap='Greys', vmin=None, vmax=None, ti
     ax.set_ylabel('Longitude [$^{\circ}$]')
     ax.tick_params(which='minor', length=5, width=2)
     ax.tick_params(which='major', length=7, width=3)
-    cbar = plt.colorbar(pc,ax=ax,shrink=0.75)
+    #cbar = plt.colorbar(pc,ax=ax,shrink=0.75)
     cbar.set_label(label,fontsize=14)
     cbar.ax.tick_params(labelsize=14)
 
@@ -80,9 +83,9 @@ def plot_msg(lons, lats, variable, label, cmap='Greys', vmin=None, vmax=None, ti
 ##########################################
 
 ######### data in /data/trade_pc/MSG_severe_cases/ #############
-datapath = '/data/trade_pc/MSG_severe_cases/'
+datapath = '/home/daniele/Documenti/PhD_Cologne/Case Studies/Germany_Flood_2021/MSG/'
 #folder = '20210629_hail_alps_central_eu'
-folder = '20210726_hail_southger_northIta'
+folder = 'HRSEVIRI_20220714_20210715_EXPATSdomain_proj'
 ################################################################
 
 # reading file list
@@ -102,13 +105,15 @@ extent_param = [minlon, maxlon, minlat, maxlat]
 # %%
 for file_path in file_list:
     # extracting date from the string
-    datetime_str = os.path.basename(file_path).split('_')[-1][:14]
+    #HRSEVIRI_20210714T120010Z_20210714T121243Z_epct_1297b012_PC.nc
+    print(file_path)
+    datetime_str = os.path.basename(file_path).split('_')[1]
     year = datetime_str[:4]
     month = datetime_str[4:6]
     day = datetime_str[6:8]
-    hours = datetime_str[8:10]
-    minutes = datetime_str[10:12]
-    seconds = datetime_str[12:]
+    hours = datetime_str[9:11]
+    minutes = datetime_str[11:13]
+    seconds = datetime_str[13:15]
 
     print(f"{year}-{month}-{day}, {hours}:{minutes}:{seconds}")
     with xr.open_dataset(file_path) as dataset:
@@ -119,7 +124,7 @@ for file_path in file_list:
         # calculate radiances at 10.8 microns
         #rad_ch_108 = add_offset + (msg_data.ch9.values * scale_factor) # radiance in mW m-2 sr-1(cm-1)-1
         # converting the radiance in SI standard ( W/m-1/sr)
-        rad_108_MKS = dataset.ch9.values*10**(-5)  # radiance in W m-1 sr-1
+        rad_108_MKS = dataset.channel_9.values*10**(-5)  # radiance in W m-1 sr-1
 
         # converting radiance to brightness temperature [ in K]
         numerator = c2*vcm
@@ -127,6 +132,9 @@ for file_path in file_list:
         denominator = alpha * (np.log(fraction))
         TB_108 = numerator/denominator - beta/alpha  ## [K]
         print(np.nanmax(TB_108), np.nanmin(TB_108), np.nanmean(TB_108))
+        print(np.shape(TB_108))
+        print(np.shape(lons))
+        print(np.shape(lats))
 
         # figure_path_out = path_out+date[0:8]+'_'+num+'.png'
         plot_msg(lons, lats, TB_108, 'Brightness temperature [K]', cmap='Greys', vmin=None, vmax=None,
