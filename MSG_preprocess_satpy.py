@@ -40,16 +40,17 @@ begin_time = time.time()
 ##############
 
 # Define the file path 
-path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_FullDisk/" 
+path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor_nat/" 
 
 #open all files in directory 
-natfile = "MSG4-SEVI-MSG15-0100-NA-*-NA.nat"
+natfile = "MSG4-SEVI-MSG15-0100-NA-*-NA.subset.nat"
 
 #test code with a single file
 #h5file = "MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA.nat"
+#HRSEVIRI_20210714T120010Z_20210714T121243Z_epct_427ffa06_F.nc
 
 fnames = glob(path_to_file+natfile)
-#print(fnames)
+print(fnames)
 
 
 ###############
@@ -83,11 +84,12 @@ if open_data:
     #Read data at different temporal steps
     for t,f in enumerate(fnames):
         file = f.split('/')[-1]
-        #print(file)
+        print(file)
 
         #get start and end time from filename format yyyymmddhhmmss
         end_scan_time = file.split('-')[5].split('.')[0]
         time_str = datetime.datetime.strptime(end_scan_time, "%Y%m%d%H%M%S")
+        #time_str = file.split('_')[2]
         print(time_str)
         #end_time = file.split('-')[10]
 
@@ -100,6 +102,7 @@ if open_data:
         
         #get the channel names
         channels = scn.available_dataset_names() 
+        #print(channels)
         #['HRV', 'IR_016', 'IR_039', 'IR_087', 'IR_097', 'IR_108', 'IR_120', 'IR_134', 'VIS006', 'VIS008', 'WV_062', 'WV_073']
 
         #inizialize list for nan values for each channel
@@ -111,11 +114,13 @@ if open_data:
         scn.load(['IR_016'])       
 
         #Crop to Vietnam area
-        crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
+        #crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
 
         #get coord in the cropped area
-        area_crop = crop_scn['IR_016'].attrs['area'] #area in m
-        sat_lon_crop, sat_lat_crop = area_crop.get_lonlats() #lat/lon grid (438,246)
+        area_crop = scn['IR_016'].attrs['area'] #area in m
+        sat_lon_crop, sat_lat_crop = area_crop.get_lonlats() #lat/lon grid (77,104)
+        #print(np.shape(sat_lat_crop),sat_lat_crop)
+        #print(np.shape(sat_lon_crop),sat_lon_crop)
 
         # create DataArrays with the coordinates using cloud mask grid
         lon_da = xr.DataArray(sat_lon_crop, dims=("y", "x"), name="lon grid")
@@ -125,21 +130,21 @@ if open_data:
         ds = xr.Dataset({"lon grid": lon_da, "lat grid": lat_da})
 
         #print(ds)
+        
 
         #esclude HRV channel
         channels = channels[1:]
 
-        #loop over the channels #1-6 reflectance; 7-14 TB -> reflectance only for shortwave
         #TODO channels loop can be parallelized as the order is not important, use dask or multiporcessing 
         for ch in channels:
             #Load channel
             scn.load([ch])       
 
             #Crop to Vietnam area
-            crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
+            #crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
 
             #get data in the cropped area
-            sat_data_crop = crop_scn[ch].values #R/Tb
+            sat_data_crop = scn[ch].values #R/Tb
 
             #check grid
             #print(Data_Preprocessing_Functions.check_regular_grid(sat_lon_crop,sat_lat_crop,'lat',True))
@@ -171,7 +176,7 @@ if open_data:
         ds.to_netcdf(proj_file_path+f.split('/')[-1].split('.')[0]+'.nc')
         print('product saved\n')
         
-        print(ds)
+        #print(ds)
 
           
     ######################

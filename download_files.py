@@ -11,7 +11,7 @@ import concurrent.futures
 begin_time = time.time()
 
 # Define the download directory
-download_dir = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor/'  
+download_dir = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor_nat/'  
 os.makedirs(download_dir, exist_ok=True)
 
 # Basic configuration of logging 
@@ -120,8 +120,8 @@ logging.info(f'Found Datasets: {len(data_items)} datasets for the given time ran
 # Define the customization chain for all channels and specified domain
 chain = eumdac.tailor_models.Chain(
     product='HRSEVIRI',
-    format='netcdf4',
-    projection='geographic', #this is needed to get the lat/lon coordinates, but it slows down the process
+    format='msgnative', #'netcdf4',
+    #projection='geographic', #this is needed to get the lat/lon coordinates, but it slows down the process
     roi={'NSWE': [north, south, west, east]}
 )
 
