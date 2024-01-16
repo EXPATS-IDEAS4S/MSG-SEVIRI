@@ -11,7 +11,7 @@ import concurrent.futures
 begin_time = time.time()
 
 # Define the download directory
-download_dir = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor_nat/'  
+download_dir = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/'  
 os.makedirs(download_dir, exist_ok=True)
 
 # Basic configuration of logging 
@@ -74,8 +74,8 @@ selected_collection = datastore.get_collection(collection_name)
 logging.info(f"{selected_collection} - {selected_collection.title}")
 
 # Define time span and geographical coordinates --> Ahr Floods July 2021
-start = datetime.datetime(2021, 7, 14, 12, 0)
-end = datetime.datetime(2021, 7, 14, 15, 0)
+start = datetime.datetime(2021, 7, 12, 0, 0)
+end = datetime.datetime(2021, 7, 16, 0, 0)
 #north, south, east, west = 51.5, 42, 16, 5  #expats
 north, south, east, west = 52, 48, 9, 5  #Germany Flood
 

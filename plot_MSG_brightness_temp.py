@@ -83,9 +83,9 @@ def plot_msg(lons, lats, variable, label, cmap='Greys', vmin=None, vmax=None, ti
 ##########################################
 
 ######### data in /data/trade_pc/MSG_severe_cases/ #############
-datapath = '/home/daniele/Documenti/PhD_Cologne/Case Studies/Germany_Flood_2021/MSG/'
+datapath = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/'
 #folder = '20210629_hail_alps_central_eu'
-folder = 'HRSEVIRI_20220714_20210715_EXPATSdomain_proj'
+folder = 'HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/HRSEVIRI_20210712_20210715_Processed'
 ################################################################
 
 # reading file list
@@ -96,7 +96,8 @@ print(len(file_list))
 
 # define area
 area_str = 'IDEA-S4S'; area_name = 'Alpine domain'
-minlon = 5.; maxlon = 16.; minlat = 42.; maxlat = 51.5
+#minlon = 5.; maxlon = 16.; minlat = 42.; maxlat = 51.5
+minlon = 5.; maxlon = 9.; minlat = 48.; maxlat = 52
 # smaller domain which Paula used plotting DCs data
 # minlon = 5.; maxlon = 16.; minlat = 44.5; maxlat = 49.5
 extent_param = [minlon, maxlon, minlat, maxlat]
@@ -107,37 +108,45 @@ for file_path in file_list:
     # extracting date from the string
     #HRSEVIRI_20210714T120010Z_20210714T121243Z_epct_1297b012_PC.nc
     print(file_path)
-    datetime_str = os.path.basename(file_path).split('_')[1]
+    datetime_str = os.path.basename(file_path).split('.')[0].split('-')[5]
     year = datetime_str[:4]
     month = datetime_str[4:6]
     day = datetime_str[6:8]
-    hours = datetime_str[9:11]
-    minutes = datetime_str[11:13]
-    seconds = datetime_str[13:15]
+    hours = datetime_str[8:10]
+    minutes = datetime_str[10:12]
+    seconds = datetime_str[12:14]
 
-    print(f"{year}-{month}-{day}, {hours}:{minutes}:{seconds}")
-    with xr.open_dataset(file_path) as dataset:
-        # Read the longitude and latitute.
-        lons = dataset.lon.values
-        lats = dataset.lat.values
+    if hours == '12':
 
-        # calculate radiances at 10.8 microns
-        #rad_ch_108 = add_offset + (msg_data.ch9.values * scale_factor) # radiance in mW m-2 sr-1(cm-1)-1
-        # converting the radiance in SI standard ( W/m-1/sr)
-        rad_108_MKS = dataset.channel_9.values*10**(-5)  # radiance in W m-1 sr-1
+        print(f"{year}-{month}-{day}, {hours}:{minutes}:{seconds}")
+        with xr.open_dataset(file_path) as dataset:
+            # Read the longitude and latitute.
+            lons = dataset['lon grid'].values
+            lats = dataset['lat grid'].values
 
-        # converting radiance to brightness temperature [ in K]
-        numerator = c2*vcm
-        fraction = c1*(vcm**3)/rad_108_MKS
-        denominator = alpha * (np.log(fraction))
-        TB_108 = numerator/denominator - beta/alpha  ## [K]
-        print(np.nanmax(TB_108), np.nanmin(TB_108), np.nanmean(TB_108))
-        print(np.shape(TB_108))
-        print(np.shape(lons))
-        print(np.shape(lats))
+            # calculate radiances at 10.8 microns
+            #rad_ch_108 = add_offset + (msg_data.ch9.values * scale_factor) # radiance in mW m-2 sr-1(cm-1)-1
+            # converting the radiance in SI standard ( W/m-1/sr)
+            rad_108_MKS = dataset['VIS006'].values #*10**(-5)  # radiance in W m-1 sr-1
 
-        # figure_path_out = path_out+date[0:8]+'_'+num+'.png'
-        plot_msg(lons, lats, TB_108, 'Brightness temperature [K]', cmap='Greys', vmin=None, vmax=None,
-                 title=f"{year}-{month}-{day}, {hours}:{minutes}:{seconds}", path_out=None)
+            # converting radiance to brightness temperature [ in K]
+            #numerator = c2*vcm
+            #fraction = c1*(vcm**3)/rad_108_MKS
+            #denominator = alpha * (np.log(fraction))
+            #TB_108 = numerator/denominator - beta/alpha  ## [K]
+            TB_108 = rad_108_MKS
+
+            #remove dim 0
+            lons = np.squeeze(lons, axis=0)
+            lats = np.squeeze(lats, axis=0)
+            TB_108 = np.squeeze(TB_108, axis=0)
+            print(np.nanmax(TB_108), np.nanmin(TB_108), np.nanmean(TB_108))
+            print(np.shape(TB_108))
+            print(np.shape(lons))
+            print(np.shape(lats))
+
+            # figure_path_out = path_out+date[0:8]+'_'+num+'.png'
+            plot_msg(lons, lats, TB_108, 'Brightness temperature [K]', cmap='Greys', vmin=None, vmax=None,
+                    title=f"{year}-{month}-{day}, {hours}:{minutes}:{seconds}", path_out=None)
 
 # %%

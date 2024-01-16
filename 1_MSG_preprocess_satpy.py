@@ -40,30 +40,13 @@ begin_time = time.time()
 ##############
 
 # Define the file path 
-path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor_nat/" 
+path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
 
 #open all files in directory 
 natfile = "MSG4-SEVI-MSG15-0100-NA-*-NA.subset.nat"
 
-#test code with a single file
-#h5file = "MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA.nat"
-#HRSEVIRI_20210714T120010Z_20210714T121243Z_epct_427ffa06_F.nc
-
-fnames = glob(path_to_file+natfile)
+fnames = sorted(glob(path_to_file+natfile))
 print(fnames)
-
-
-###############
-#Quality Check#
-###############
-
-# #check for corrupted files
-# not_corrupted_files = Data_Preprocessing_Functions.check_openable_files(path_to_file,fnames,'agri_fy4a_l1')
-# print('Number of files that are corrupted:', len(fnames)-len(not_corrupted_files))
-
-# #check for missing time steps
-# missing_intervals = Data_Preprocessing_Functions.check_file_coverage(path_to_file, fnames,'202010010000','202010312359')
-# print('Number of missing intervals:', len(missing_intervals))
 
 ###########
 #Open Data#
@@ -76,26 +59,15 @@ if open_data:
     #2021 Germany Flood Area
     lonmin, latmin, lonmax, latmax= 5, 48, 9, 52
 
-    #check for nan values, inizialize array
-    #nan_values = []
-    #start_nan = []
-    #end_nan = []
-
     #Read data at different temporal steps
     for t,f in enumerate(fnames):
         file = f.split('/')[-1]
-        print(file)
+        #print(file)
 
         #get start and end time from filename format yyyymmddhhmmss
         end_scan_time = file.split('-')[5].split('.')[0]
         time_str = datetime.datetime.strptime(end_scan_time, "%Y%m%d%H%M%S")
-        #time_str = file.split('_')[2]
         print(time_str)
-        #end_time = file.split('-')[10]
-
-        #append date for nan checking
-        #start_nan.append(datetime.datetime.strptime(start_time, "%Y%m%d%H%M%S"))
-        #end_nan.append(datetime.datetime.strptime(end_time, "%Y%m%d%H%M%S"))
         
         #open file with Satpy
         scn = satpy.Scene(reader='seviri_l1b_native', filenames=[f]) #By default bad quality scan lines are masked and replaced with np.nan based on the quality flags provided by the data 
@@ -105,22 +77,27 @@ if open_data:
         #print(channels)
         #['HRV', 'IR_016', 'IR_039', 'IR_087', 'IR_097', 'IR_108', 'IR_120', 'IR_134', 'VIS006', 'VIS008', 'WV_062', 'WV_073']
 
-        #inizialize list for nan values for each channel
-        #nan_channels = []
 
         #get the lat/lon coords
 
         #Load one channel
-        scn.load(['IR_016'])       
+        scn.load(['IR_039'])       
 
-        #Crop to Vietnam area
-        #crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
+        #Crop to area of interest
+        crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
 
         #get coord in the cropped area
-        area_crop = scn['IR_016'].attrs['area'] #area in m
+        area_crop = crop_scn['IR_039'].attrs['area'] #area in m
         sat_lon_crop, sat_lat_crop = area_crop.get_lonlats() #lat/lon grid (77,104)
         #print(np.shape(sat_lat_crop),sat_lat_crop)
         #print(np.shape(sat_lon_crop),sat_lon_crop)
+
+        #get coords with parallax correction
+        #sc = satpy.Scene({"seviri_l1b_hrit": files_l1b, "nwcsaf-geo": files_l2})
+        #sc.load(["parallax_corrected_VIS006"])
+        #get coord parallax corrected
+        #area_plax_corr = sc['VIS006'].attrs['area'] #area in m
+        #sat_lon_plax, sat_lat_plax = area_plax_corr.get_lonlats() #lat/lon grid (77,104)
 
         # create DataArrays with the coordinates using cloud mask grid
         lon_da = xr.DataArray(sat_lon_crop, dims=("y", "x"), name="lon grid")
@@ -128,10 +105,8 @@ if open_data:
 
         # combine DataArrays into xarray object
         ds = xr.Dataset({"lon grid": lon_da, "lat grid": lat_da})
-
         #print(ds)
         
-
         #esclude HRV channel
         channels = channels[1:]
 
@@ -140,25 +115,16 @@ if open_data:
             #Load channel
             scn.load([ch])       
 
-            #Crop to Vietnam area
-            #crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
+            #Crop to area of interest
+            crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
 
             #get data in the cropped area
-            sat_data_crop = scn[ch].values #R/Tb
-
-            #check grid
-            #print(Data_Preprocessing_Functions.check_regular_grid(sat_lon_crop,sat_lat_crop,'lat',True))
-            #print(Data_Preprocessing_Functions.check_regular_grid(sat_lon_crop,sat_lat_crop,'lon',True))
-        
-            #check for missing data
-            #nan_channels.append(np.sum(np.isnan(sat_data_crop))/len(sat_data_crop)) #take the ratio of nan and the total number of pixels
+            sat_data_crop = crop_scn[ch].values #R/Tb
+            #print('sat data',sat_data_crop)
             
             #add channel values to the Dataset
             sat_da = xr.DataArray(sat_data_crop, dims=("y", "x"), name=str(ch))
             ds[str(ch)] = sat_da
-
-        #append the list of nan values for all the channels
-        #nan_values.append(nan_channels)
 
         # Add a new dimension for the start time coordinate
         ds = ds.expand_dims('end_time', axis=0)
@@ -177,26 +143,6 @@ if open_data:
         print('product saved\n')
         
         #print(ds)
-
-          
-    ######################
-    #check missing values#
-    ######################
-
-    #convert to dataframe table the nan lists
-    #df_nan = pd.DataFrame(nan_values, columns=channels)
-
-    #add times
-    #df_nan['Start Time'] = start_nan
-
-    #save to csv file
-    #df_nan.to_csv(path_to_file+'nan_ratio.csv', index=False)
-    
-    #df_nan = pd.read_csv(path_to_file+'nan_ratio.csv')
-
-    #plot number of nan values (ratio) for each channel and time step
-    #Data_Preprocessing_Functions.plot_nan_ratio(df_nan,path_to_file) 
-
 
 # End time
 end_time = time.time()
