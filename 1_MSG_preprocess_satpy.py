@@ -40,10 +40,10 @@ begin_time = time.time()
 ##############
 
 # Define the file path 
-path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
+path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor_nat/" 
 
 #open all files in directory 
-natfile = "MSG4-SEVI-MSG15-0100-NA-*-NA.subset.nat"
+natfile = "MSG4-SEVI-MSG15-*-NA.subset.nat"
 
 fnames = sorted(glob(path_to_file+natfile))
 print(fnames)
@@ -131,7 +131,7 @@ if open_data:
         ds['end_time'] = [time_str]
 
         # Set the directory path to save files
-        proj_file_path = path_to_file+'HRSEVIRI_20210712_20210715_Processed/'
+        proj_file_path = path_to_file+'HRSEVIRI_20210714_20210715_Processed/'
 
         # Check if the directory exists
         if not os.path.exists(proj_file_path):
