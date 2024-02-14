@@ -1,8 +1,8 @@
 import netCDF4 as nc
 
 # Path to your NetCDF file
-path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor_CLI_nc/'
-nc_file = 'HRSEVIRI_20210714T141511Z_20210714T142743Z_epct_590d1b41_F.nc'
+path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
+nc_file = 'CTXin20210712000000405SVMSGI1UD.nc'
 
 # Open the NetCDF file
 dataset = nc.Dataset(path_to_files+nc_file, 'r')  # 'r' is for read mode
