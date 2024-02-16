@@ -10,13 +10,10 @@ last Edit: December 2023
 #import libraries#
 ##################
 
-import numpy as np
-import pandas as pd
 import satpy 
 from glob import glob
 import xarray as xr
 import datetime
-import sys
 import os
 import time
 
@@ -40,19 +37,25 @@ begin_time = time.time()
 ##############
 
 # Define the file path 
-path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220714_20210715_Flood_domain_DataTailor_nat/" 
+path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
+path_to_cth = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/" 
 
-#open all files in directory 
+#open all MSG files in directory 
 natfile = "MSG4-SEVI-MSG15-*-NA.subset.nat"
-
 fnames = sorted(glob(path_to_file+natfile))
 print(fnames)
+
+#open all CTH files in directoy
+cth_file = 'CTXin*.nc'
+cth_fnames = sorted(glob(path_to_cth+cth_file))
+
 
 ###########
 #Open Data#
 ###########
 
 open_data = True
+parallax_correction = True
 
 if open_data:
 
@@ -62,6 +65,7 @@ if open_data:
     #Read data at different temporal steps
     for t,f in enumerate(fnames):
         file = f.split('/')[-1]
+        cth_file = cth_fnames[t].split('/')[-1]
         #print(file)
 
         #get start and end time from filename format yyyymmddhhmmss
@@ -76,7 +80,6 @@ if open_data:
         channels = scn.available_dataset_names() 
         #print(channels)
         #['HRV', 'IR_016', 'IR_039', 'IR_087', 'IR_097', 'IR_108', 'IR_120', 'IR_134', 'VIS006', 'VIS008', 'WV_062', 'WV_073']
-
 
         #get the lat/lon coords
 
@@ -110,8 +113,16 @@ if open_data:
         #esclude HRV channel
         channels = channels[1:]
 
+        if parallax_correction:
+            #create Scene for the parallax correction
+            #scn = satpy.Scene({"seviri_l1b_native": [f], "cmsaf-claas2_l2_nc": [cth_fnames[t]]})
+            scn = satpy.Scene({"seviri_l1b_native": [f], "nwcsaf-pps_nc": [cth_fnames[t]]})
+
         #TODO channels loop can be parallelized as the order is not important, use dask or multiporcessing 
         for ch in channels:
+            if parallax_correction:
+                ch = 'parallax_corrected_'+ch
+
             #Load channel
             scn.load([ch])       
 
@@ -131,7 +142,9 @@ if open_data:
         ds['end_time'] = [time_str]
 
         # Set the directory path to save files
-        proj_file_path = path_to_file+'HRSEVIRI_20210714_20210715_Processed/'
+        proj_file_path = path_to_file+'HRSEVIRI_20210712_20210715_Processed/'
+        if parallax_correction:
+            proj_file_path = path_to_file+'HRSEVIRI_20210712_20210715_Parallax_Corrected/'
 
         # Check if the directory exists
         if not os.path.exists(proj_file_path):
