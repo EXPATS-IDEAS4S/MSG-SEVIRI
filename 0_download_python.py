@@ -11,7 +11,7 @@ import concurrent.futures
 begin_time = time.time()
 
 # Define the download directory
-download_dir = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/'  
+download_dir = '/data/sat/msg/test/'  
 os.makedirs(download_dir, exist_ok=True)
 
 # Basic configuration of logging 
@@ -19,8 +19,10 @@ logging.basicConfig(level=logging.INFO, filename=download_dir+'data_tailor.log',
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Set your credentials (find them in EUMETSAT profile portal)
-consumer_key = 'MwVGCDXIMtsN7Cj28dGBz4UcZYga'
-consumer_secret = 'Lepxj10Ag3p2R5FVdpwvP08Ny_Ia'
+#consumer_key = 'MwVGCDXIMtsN7Cj28dGBz4UcZYga'
+#consumer_secret = 'Lepxj10Ag3p2R5FVdpwvP08Ny_Ia'
+consumer_key = 'xoRBoRjjpsbmX2ZzBVY1UbKcmVAa'
+consumer_secret = 'owcUIfV6kGNupOl75P6xQ9vKrssa'
 
 # For security resaon, they can be set up as enviromental variables using exports from the terminal, e.g.
 # export CONSUMER_KEY=MwVGCDXIMtsN7Cj28dGBz4UcZYga
@@ -74,10 +76,10 @@ selected_collection = datastore.get_collection(collection_name)
 logging.info(f"{selected_collection} - {selected_collection.title}")
 
 # Define time span and geographical coordinates --> Ahr Floods July 2021
-start = datetime.datetime(2021, 7, 12, 0, 0)
-end = datetime.datetime(2021, 7, 16, 0, 0)
-#north, south, east, west = 51.5, 42, 16, 5  #expats
-north, south, east, west = 52, 48, 9, 5  #Germany Flood
+start = datetime.datetime(2023, 7, 1, 0, 0)
+end = datetime.datetime(2023, 7, 31, 0, 0)
+north, south, east, west = 51.5, 42, 16, 5  #expats
+#north, south, east, west = 52, 48, 9, 5  #Germany Flood
 
 # Search for data in the specified time span
 data_items = selected_collection.search(dtstart=start, dtend=end)

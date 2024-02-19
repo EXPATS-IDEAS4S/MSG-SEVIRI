@@ -37,17 +37,17 @@ begin_time = time.time()
 ##############
 
 # Define the file path 
-path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
+path_to_file = "/data/sat/msg/test/" 
 path_to_cth = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/" 
 
 #open all MSG files in directory 
-natfile = "MSG4-SEVI-MSG15-*-NA.subset.nat"
+natfile = "*NA.subset.nat"
 fnames = sorted(glob(path_to_file+natfile))
 print(fnames)
 
 #open all CTH files in directoy
-cth_file = 'CTXin*.nc'
-cth_fnames = sorted(glob(path_to_cth+cth_file))
+#cth_file = 'CTXin*.nc'
+#cth_fnames = sorted(glob(path_to_cth+cth_file))
 
 
 ###########
@@ -55,7 +55,7 @@ cth_fnames = sorted(glob(path_to_cth+cth_file))
 ###########
 
 open_data = True
-parallax_correction = True
+parallax_correction = False
 
 if open_data:
 
@@ -65,7 +65,7 @@ if open_data:
     #Read data at different temporal steps
     for t,f in enumerate(fnames):
         file = f.split('/')[-1]
-        cth_file = cth_fnames[t].split('/')[-1]
+        #cth_file = cth_fnames[t].split('/')[-1]
         #print(file)
 
         #get start and end time from filename format yyyymmddhhmmss
@@ -142,7 +142,7 @@ if open_data:
         ds['end_time'] = [time_str]
 
         # Set the directory path to save files
-        proj_file_path = path_to_file+'HRSEVIRI_20210712_20210715_Processed/'
+        proj_file_path = path_to_file+'ncdf/'
         if parallax_correction:
             proj_file_path = path_to_file+'HRSEVIRI_20210712_20210715_Parallax_Corrected/'
 
