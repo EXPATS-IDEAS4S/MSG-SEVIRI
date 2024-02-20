@@ -34,11 +34,11 @@ def read_ncdf():
     data = xr.open_mfdataset(filelist_ncdf, drop_variables=DROP_VARIABLES)
     
     data_sel = data.isel(end_time=0)
-    print(len(data_sel['lon grid'].values[:,0 ]))
-    print(len(data_sel['lat grid'].values[0, :]))
 
-    data['lat_grid'] = (('x'), data_sel['lon grid'].values[0,:])
-    data['lon_grid'] = (('y'), data_sel['lat grid'].values[:,0])
+    # removing time dimension from lat and lons
+    data['lat_grid'] = (('y','x'), data_sel['lon grid'].values)
+    data['lon_grid'] = (('y','x'), data_sel['lat grid'].values)
     data = data.drop_vars('lon grid')
     data = data.drop_vars('lat grid')
+    
     return data
