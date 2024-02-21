@@ -77,7 +77,7 @@ logging.info(f"{selected_collection} - {selected_collection.title}")
 
 # Define time span and geographical coordinates --> Ahr Floods July 2021
 start = datetime.datetime(2023, 7, 1, 0, 0)
-end = datetime.datetime(2023, 7, 31, 0, 0)
+end = datetime.datetime(2023, 7, 15, 0, 0)
 north, south, east, west = 51.5, 42, 16, 5  #expats
 #north, south, east, west = 52, 48, 9, 5  #Germany Flood
 

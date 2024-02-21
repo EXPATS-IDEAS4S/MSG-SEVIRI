@@ -28,3 +28,12 @@ raster_filename = '/net/yube/ESSL/NE1_HR_LC_SR_W_DR/NE1_HR_LC_SR_W_DR.tif'
 
 # file path for figures
 path_figs = '/net/ostro/figs_proposal_TEAMX/'
+
+
+# file containing orography for expats domain
+orography_file = '/net/ostro/figs_proposal_TEAMX/orography_expats_high_res.nc'
+
+
+# file path for raster 
+raster_filename_1 = '/net/ostro/50N000E_20101117_gmted_max075.tif'
+raster_filename_2 = '/net/ostro/30N000E_20101117_gmted_max075.tif'

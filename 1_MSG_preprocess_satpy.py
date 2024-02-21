@@ -32,16 +32,15 @@ begin_time = time.time()
 #print(satpy.available_readers())
 #seviri_l1b_native
 
-##############
-#define paths#
-##############
-
 from readers.files_dirs import path_to_file, path_to_cth, nat_fnames, cth_fnames, path_ncdf
-from figures.domain_info import domain_dfg
+from figures.domain_info import domain_expats
+
 open_data = True
 parallax_correction = False
+domain = domain_expats
 
-domain = domain_dfg
+
+
 def main():
         
     ###########
@@ -111,6 +110,7 @@ def main():
             #    proj_file_path = path_to_file+'HRSEVIRI_20210712_20210715_Parallax_Corrected/'
 
             ds.to_netcdf(path_ncdf+f.split('/')[-1].split('.')[0]+'.nc')
+
             print('product saved\n')
             
             #print(ds)
