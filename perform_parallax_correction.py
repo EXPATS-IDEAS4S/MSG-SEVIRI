@@ -48,4 +48,4 @@ lon_data = read_nc_var(radiance_file_path, 'longitude_var_name')  # Replace 'lon
 # Perform parallax correction
 corrected_lat, corrected_lon = parallax_correction(cth_data, lat_data, lon_data, satellite_height)
 
-# You can now use corrected_lat and corrected_lon for further analysis
+

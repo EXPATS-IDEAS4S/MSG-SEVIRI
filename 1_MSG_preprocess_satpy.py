@@ -38,7 +38,7 @@ begin_time = time.time()
 
 # Define the file path 
 path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
-path_to_cth = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/" 
+path_to_cth = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/NWC_SAF/" 
 
 #open all MSG files in directory 
 natfile = "MSG4-SEVI-MSG15-*-NA.subset.nat"
@@ -46,8 +46,12 @@ fnames = sorted(glob(path_to_file+natfile))
 print(fnames)
 
 #open all CTH files in directoy
-cth_file = 'CTXin*.nc'
+#cth_file = 'CTXin*.nc'
+cth_file = "S_NWC_CTTH*.nc"
 cth_fnames = sorted(glob(path_to_cth+cth_file))
+
+scn = satpy.Scene({"seviri_l1b_native": [f], "nwcsaf-geo_nc": [cth_fnames[t]]})
+
 
 
 ###########
@@ -65,13 +69,15 @@ if open_data:
     #Read data at different temporal steps
     for t,f in enumerate(fnames):
         file = f.split('/')[-1]
-        cth_file = cth_fnames[t].split('/')[-1]
         #print(file)
 
         #get start and end time from filename format yyyymmddhhmmss
         end_scan_time = file.split('-')[5].split('.')[0]
         time_str = datetime.datetime.strptime(end_scan_time, "%Y%m%d%H%M%S")
         print(time_str)
+
+        cth_file = cth_fnames[t].split('/')[-1]
+
         
         #open file with Satpy
         scn = satpy.Scene(reader='seviri_l1b_native', filenames=[f]) #By default bad quality scan lines are masked and replaced with np.nan based on the quality flags provided by the data 
@@ -116,7 +122,7 @@ if open_data:
         if parallax_correction:
             #create Scene for the parallax correction
             #scn = satpy.Scene({"seviri_l1b_native": [f], "cmsaf-claas2_l2_nc": [cth_fnames[t]]})
-            scn = satpy.Scene({"seviri_l1b_native": [f], "nwcsaf-pps_nc": [cth_fnames[t]]})
+            scn = satpy.Scene({"seviri_l1b_native": [f], "nwcsaf-geo_nc": [cth_fnames[t]]})
 
         #TODO channels loop can be parallelized as the order is not important, use dask or multiporcessing 
         for ch in channels:

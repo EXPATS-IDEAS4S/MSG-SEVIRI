@@ -16,7 +16,7 @@ import os
 ### Define Paths ###
 
 #path where cth data are stored
-path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
+path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/CM_SAF/'
 
 #path to save the images
 path_fig = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/Fig/CTH_maps/'
@@ -31,9 +31,14 @@ fnames = sorted(glob(path_to_files+nc_file))
 
 #open all files using xarray
 ds_cth = xr.open_mfdataset(fnames, combine='nested', concat_dim='time', parallel=True)
-#print(ds_cth['cth'])
-cth_min = np.amin(ds_cth['cth'][:]).values
-cth_max = np.amax(ds_cth['cth'][:]).values
+print(ds_cth)#['ctth_alti'][:].values)
+
+
+variable_name = 'cth'
+print(np.sum((~np.isnan(ds_cth[variable_name][:].values))))
+
+cth_min = np.amin(ds_cth[variable_name][:]).values
+cth_max = np.amax(ds_cth[variable_name][:]).values
 print('cth min-max: ', cth_min,cth_max)
 
 ### Get lan lon from MSG ###
@@ -71,7 +76,7 @@ for t,f in enumerate(fnames):
         x = dataset.variables['x'][:] #zonal angles satellite and point of measurement (rad)
         y = dataset.variables['y'][:] #meridional angle ''
         h = dataset.variables['subsatellite_alt'][:][0] #satellite hight
-        cth = dataset.variables['cth'][:].squeeze() #Cloud top height
+        cth = dataset.variables[variable_name][:].squeeze() #Cloud top height
     #print('CTH', np.shape(cth), cth)
     #print("x: ", np.shape(x), x)
     #print("y: ", np.shape(y), y)
@@ -113,9 +118,11 @@ for t,f in enumerate(fnames):
     
 
     ### Regrid to MSG grid ###
-
-    # create a 1D array for cth values 
+        
+    # create a 1D array for cth values and lat-lon grids 
     cth_flat = cth.flatten()
+    #lon_flat = lon.flatten()
+    #lat_flat = lat.flatten()
     
     # Create a 2D mesh grid for the MSG data
     msg_points = np.array([msg_lat_grid.flatten(), msg_lon_grid.flatten()]).T
@@ -205,6 +212,6 @@ for t,f in enumerate(fnames):
     ax.set_extent([5, 9, 48, 52]) #left, right, bottom ,top
 
     plt.title('Cloud Top Height (CTH) from CM SAF - '+readable_date_time, fontsize=12, fontweight='bold')
-    #plt.show()
-    fig.savefig(path_fig+'cth_map_'+date_time_str+'.png', bbox_inches='tight')
+    plt.show()
+    #fig.savefig(path_fig+'cth_map_'+date_time_str+'.png', bbox_inches='tight')
     plt.close()
