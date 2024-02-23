@@ -174,3 +174,21 @@ output_file_path = path_to_file+'elapsed_time_satpy.txt'
 # Write elapsed time to the file
 with open(output_file_path, 'w') as file:
     print(f"Elapsed time: {elapsed_time} seconds", file=file)
+
+
+
+# # storing ncdf data compressed mode: example!
+#     MRRdata.to_netcdf(path_out+dateReverse+‘_MRR_PRO_msm_eurec4a.nc’, encoding={“Z”:{“zlib”:True, “complevel”:9},\
+#                                                                                              “Ze”: {“dtype”: “f4", “zlib”: True, “complevel”:9}, \
+#                                                                                              “Zea”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “drop_size_distribution”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “liquid_water_content”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “Kurtosis”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “fall_speed”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “skewness”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “mean_mass_weigthed_raindrop_diameter”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “spectral_width”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “rain_rate”: {“zlib”: True, “complevel”:9}, \
+#                                                                                              “lat”: {“dtype”: “f4"} , \
+#                                                                                              “lon”: {“dtype”: “f4”}, \
+#                                                                                              “time”: {“units”: “seconds since 2020-01-01", “dtype”: “i4"}})

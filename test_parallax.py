@@ -1,30 +1,23 @@
 import satpy 
-from glob import glob
-import xarray as xr
 import datetime
-import time
-import netCDF4 as nc
 import matplotlib.pyplot as plt
 import numpy as np
 import cartopy.crs as ccrs
-import pyproj
 import cartopy.feature as cfeature
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from datetime import datetime
 import matplotlib.cm as cm
 import matplotlib.colors as colors
-from scipy.interpolate import griddata
-import os
 
 # Define the file path 
 path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
 path_to_cth = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/" 
 
 # MSG file  
-natfile = path_to_file+"MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA.subset.nat"
+natfile = path_to_file+"MSG4-SEVI-MSG15-0100-NA-20210714122743.591000000Z-NA.subset.nat"
 
 # CTH file 
-cth_file = path_to_cth+"NWC_SAF/S_NWC_CTTH_MSG4_FLOOD-GER-2021-VISIR_20210714T120000Z.nc"
+cth_file = path_to_cth+"NWC_SAF/S_NWC_CTTH_MSG4_FLOOD-GER-2021-VISIR_20210714T121500Z.nc"
 #cth_file = path_to_cth+"CM_SAF/CTXin20210714120000405SVMSGI1UD.nc"
 
 # Fig Path
@@ -52,8 +45,7 @@ channels_unit = ['Reflectances (%)', 'Brightness Temperature (K)', 'Brightness T
 #open msg files without parrallax
 scn = satpy.Scene(reader='seviri_l1b_native', filenames=[natfile])
 #scn_cth = satpy.Scene(reader='cmsaf-claas3_l2_nc', filenames=[cth_file])
-scn_cth = satpy.Scene(reader='nwcsaf-geo', filenames=[cth_file])
-
+#scn_cth = satpy.Scene(reader='nwcsaf-geo', filenames=[cth_file])
 
 #open msg files with parrallax
 #scn_parallax = satpy.Scene({"seviri_l1b_native": [natfile], "cmsaf-claas3_l2_nc": [cth_file]})
@@ -140,6 +132,7 @@ for i,ch in enumerate(channels):
         ax.coastlines(resolution='50m', linewidths=0.5)
         ax.add_feature(cfeature.BORDERS, linewidth=0.5, edgecolor='black')
         ax.set_extent([5, 9, 48, 52])  # Adjust this based on your data
+        #ax.set_extent([4.5, 9.5, 47.5, 52.5])
 
     # Add a title to the figure
     plt.suptitle('Channel '+ch+' - '+readable_date_time, fontsize=14, fontweight='bold',y=0.77)

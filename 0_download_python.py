@@ -11,16 +11,23 @@ import concurrent.futures
 begin_time = time.time()
 
 # Define the download directory
-download_dir = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/'  
+#download_dir = '/data/sat/msg/test/'  
+download_dir = '/work/MSG/'  
 os.makedirs(download_dir, exist_ok=True)
 
+path_to_failed_file = '/work/MSG/failed_customizations.txt'
+
 # Basic configuration of logging 
-logging.basicConfig(level=logging.INFO, filename=download_dir+'data_tailor.log', filemode='w',
+logging.basicConfig(level=logging.INFO, filename=download_dir+'data_tailor_2.log', filemode='w',
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Set your credentials (find them in EUMETSAT profile portal)
+#Daniele Credentials
 consumer_key = 'MwVGCDXIMtsN7Cj28dGBz4UcZYga'
 consumer_secret = 'Lepxj10Ag3p2R5FVdpwvP08Ny_Ia'
+#Claudia Credentials
+#consumer_key = 'xoRBoRjjpsbmX2ZzBVY1UbKcmVAa'
+#consumer_secret = 'owcUIfV6kGNupOl75P6xQ9vKrssa'
 
 # For security resaon, they can be set up as enviromental variables using exports from the terminal, e.g.
 # export CONSUMER_KEY=MwVGCDXIMtsN7Cj28dGBz4UcZYga
@@ -74,10 +81,10 @@ selected_collection = datastore.get_collection(collection_name)
 logging.info(f"{selected_collection} - {selected_collection.title}")
 
 # Define time span and geographical coordinates --> Ahr Floods July 2021
-start = datetime.datetime(2021, 7, 12, 0, 0)
-end = datetime.datetime(2021, 7, 16, 0, 0)
-#north, south, east, west = 51.5, 42, 16, 5  #expats
-north, south, east, west = 52, 48, 9, 5  #Germany Flood
+start = datetime.datetime(2023, 7, 16, 0, 0)
+end = datetime.datetime(2023, 8, 1, 0, 0)
+north, south, east, west = 51.5, 42, 16, 5  #expats
+#north, south, east, west = 52, 48, 9, 5  #Germany Flood
 
 # Search for data in the specified time span
 data_items = selected_collection.search(dtstart=start, dtend=end)
@@ -87,20 +94,26 @@ data_items = selected_collection.search(dtstart=start, dtend=end)
 # function to check if the file is already present in the downloading directory
 def is_file_present(filename, download_dir):
     #Assuming the the file format are the following:
-    #example of name file before costumization: MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA
-    #exaple of name file after costumization (in the download directory): HRSEVIRI_20210715T101510Z_20210715T102742Z_epct_34b8524d_PC.nc
-    start_time_str = filename.split('-')[5].split('.')[0]
+    #example of name file before costumization: 
+    #MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA
+    #exaple of name file after costumization (in the download directory):
+    #if nat file are downloded 
+    #MSG3-SEVI-MSG15-0100-NA-20230731215741.559000000Z-NA.subset.nat
+    #if nc files are downloaded
+    #HRSEVIRI_20210715T101510Z_20210715T102742Z_epct_34b8524d_PC.nc
+    time_str = filename.split('-')[5].split('.')[0]
     #start_time = datetime.strptime(start_time_str, "%Y%m%dT%H%M%SZ")
 
     # Insert 'T' after the 8th character and 'Z' at the end
-    start_time_str = start_time_str[:8] + 'T' + start_time_str[8:] + 'Z'
+    #time_str = time_str[:8] + 'T' + time_str[8:] + 'Z'
 
     # List all files in the download directory
     existing_files = os.listdir(download_dir)
     
     # Check if a file for this time period already exists
     for file in existing_files:
-        if file.startswith("HRSEVIRI_") and start_time_str in file.split('_'):
+        #if file.startswith("HRSEVIRI_") and time_str in file.split('_'):
+        if time_str in file.split('.')[0].split('-'):    
             return True
     return False
 
@@ -125,22 +138,6 @@ chain = eumdac.tailor_models.Chain(
     roi={'NSWE': [north, south, west, east]}
 )
 
-#function for downloading the data
-def download_file(customisation, output, download_dir):
-        file_name = os.path.basename(output)
-        file_path = os.path.join(download_dir, file_name)
-
-        if not os.path.exists(file_path):
-            try:
-                with customisation.stream_output(output) as stream, open(file_path, mode='wb') as fdst:
-                    shutil.copyfileobj(stream, fdst)
-                return f"Downloaded {file_path}"
-            except IOError as io_error:
-                return f"IO Error while downloading {file_path}: {io_error}"
-            except requests.exceptions.RequestException as request_error:
-                return f"Request Error while downloading {file_path}: {request_error}"
-        else:
-            return f"File {file_path} already exists. Skipping download."
 
 # Process each data item
 for item in data_items:
@@ -149,44 +146,83 @@ for item in data_items:
         customisation = datatailor.new_customisation(item, chain)
     except eumdac.datatailor.CustomisationError as error:
         logging.error("Customisation Error:", error)
-        continue
+        continue  # Skips to the next iteration of the for loop
     except requests.exceptions.RequestException as error:
         logging.error("Request Error:", error)
-        continue
+        continue  # Skips to the next iteration of the for loop
+
+    # Flag to track if we should skip to the next item
+    skip_to_next_item = False
 
     # Check the customisation status
     while customisation.status != 'DONE':
         logging.info(customisation.status)
-        time.sleep(10) #Pauses the script for 10 seconds between status checks to avoid overwhelming the server with requests.
-    
-    # Use ThreadPoolExecutor to download files in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        # Create a future object for each file to be downloaded
-        futures = [executor.submit(download_file, customisation, output, download_dir) 
-                   for output in customisation.outputs]
+        time.sleep(30)  # Pauses the script for 30 seconds between status checks
 
-        # As each future completes, print its result
-        for future in concurrent.futures.as_completed(futures):
-            logging.info(future.result())
+        if customisation.status == 'FAILED':
+            # Write in a file the item that failed to be customized
+            with open(path_to_failed_file, "a") as file:
+                file.write(f"{item}\n")
 
-    # #Dowload the customized data
-    # for output in customisation.outputs:
+            # # Optionally, delete the failed customisation
+            # try:
+            #     customisation.delete()
+            # except (eumdac.datatailor.CustomisationError, requests.exceptions.RequestException) as error:
+            #     logging.error("Error during customisation deletion:", error)
+
+            skip_to_next_item = True  # Set the flag to skip to the next item
+            break  # Exit the while loop
+
+    if skip_to_next_item:
+        continue  # Skips to the next iteration of the for loop because of failure
+
+   
+    # # Use ThreadPoolExecutor to download files in parallel 
+    # # (as customization isn't parallel using python maybe is not worthy to use this)
+    # #function for downloading the data 
+    # def download_file(customisation, output, download_dir):
     #     file_name = os.path.basename(output)
-    #     #file_name = output.split('/')[-1]
     #     file_path = os.path.join(download_dir, file_name)
 
-    #     # Check if the file already exists TODO maybe this step is redundant if I check the existence of the file before the data tailor step
     #     if not os.path.exists(file_path):
     #         try:
     #             with customisation.stream_output(output) as stream, open(file_path, mode='wb') as fdst:
     #                 shutil.copyfileobj(stream, fdst)
-    #             logging.info(f"Downloaded {file_path}")
+    #             return f"Downloaded {file_path}"
     #         except IOError as io_error:
-    #             logging.error(f"IO Error while downloading {file_path}: {io_error}")
+    #             return f"IO Error while downloading {file_path}: {io_error}"
     #         except requests.exceptions.RequestException as request_error:
-    #             logging.error(f"Request Error while downloading {file_path}: {request_error}")
+    #             return f"Request Error while downloading {file_path}: {request_error}"
     #     else:
-    #         logging.info(f"File {file_path} already exists. Skipping download.")
+    #         return f"File {file_path} already exists. Skipping download."
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    #     # Create a future object for each file to be downloaded
+    #     futures = [executor.submit(download_file, customisation, output, download_dir) 
+    #                for output in customisation.outputs]
+
+    #     # As each future completes, print its result
+    #     for future in concurrent.futures.as_completed(futures):
+    #         logging.info(future.result())
+
+    #Dowload the customized data
+    for output in customisation.outputs:
+        file_name = os.path.basename(output)
+        #file_name = output.split('/')[-1]
+        file_path = os.path.join(download_dir, file_name)
+
+        # Check if the file already exists 
+        #TODO maybe this step is redundant if I check the existence of the file before the data tailor step
+        if not os.path.exists(file_path):
+            try:
+                with customisation.stream_output(output) as stream, open(file_path, mode='wb') as fdst:
+                    shutil.copyfileobj(stream, fdst)
+                logging.info(f"Downloaded {file_path}")
+            except IOError as io_error:
+                logging.error(f"IO Error while downloading {file_path}: {io_error}")
+            except requests.exceptions.RequestException as request_error:
+                logging.error(f"Request Error while downloading {file_path}: {request_error}")
+        else:
+            logging.info(f"File {file_path} already exists. Skipping download.")
 
 
     #The Data Tailor Web Service has a 20 Gb limit, so it's important to clear old customisations
@@ -198,6 +234,10 @@ for item in data_items:
         logging.error("Request Error during customisation deletion:", error)
 
 logging.info("Data processing complete.")
+
+#TODO try to customize and download the failed process
+#if os.path.getsize(path_to_failed_file) > 0:
+    
 
 # End time
 end_time = time.time()
