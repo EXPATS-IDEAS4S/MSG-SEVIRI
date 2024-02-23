@@ -12,13 +12,14 @@ begin_time = time.time()
 
 # Define the download directory
 #download_dir = '/data/sat/msg/test/'  
-download_dir = '/work/MSG/'  
+download_dir = '/work/NWC_SAF/import/Sat_data/'  
 os.makedirs(download_dir, exist_ok=True)
 
-path_to_failed_file = '/work/MSG/failed_customizations.txt'
+path_to_failed_file = download_dir+'failed_customizations.txt'
+path_to_log_file = download_dir+'data_tailor_dani.log'
 
 # Basic configuration of logging 
-logging.basicConfig(level=logging.INFO, filename=download_dir+'data_tailor_2.log', filemode='w',
+logging.basicConfig(level=logging.INFO, filename=path_to_log_file, filemode='w',
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Set your credentials (find them in EUMETSAT profile portal)
@@ -81,10 +82,11 @@ selected_collection = datastore.get_collection(collection_name)
 logging.info(f"{selected_collection} - {selected_collection.title}")
 
 # Define time span and geographical coordinates --> Ahr Floods July 2021
-start = datetime.datetime(2023, 7, 16, 0, 0)
-end = datetime.datetime(2023, 8, 1, 0, 0)
-north, south, east, west = 51.5, 42, 16, 5  #expats
-#north, south, east, west = 52, 48, 9, 5  #Germany Flood
+start = datetime.datetime(2021, 7, 12, 0, 0)
+end = datetime.datetime(2021, 7, 16, 0, 0)
+#north, south, east, west = 51.5, 42, 16, 5  #expats
+north, south, east, west = 52, 48, 9, 5  #Germany Flood
+format = 'hrit' #'msgnative','netcdf4',
 
 # Search for data in the specified time span
 data_items = selected_collection.search(dtstart=start, dtend=end)
@@ -92,33 +94,52 @@ data_items = selected_collection.search(dtstart=start, dtend=end)
 # Check if the file already exists
 
 # function to check if the file is already present in the downloading directory
-def is_file_present(filename, download_dir):
-    #Assuming the the file format are the following:
-    #example of name file before costumization: 
-    #MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA
-    #exaple of name file after costumization (in the download directory):
-    #if nat file are downloded 
-    #MSG3-SEVI-MSG15-0100-NA-20230731215741.559000000Z-NA.subset.nat
-    #if nc files are downloaded
-    #HRSEVIRI_20210715T101510Z_20210715T102742Z_epct_34b8524d_PC.nc
-    time_str = filename.split('-')[5].split('.')[0]
-    #start_time = datetime.strptime(start_time_str, "%Y%m%dT%H%M%SZ")
-
-    # Insert 'T' after the 8th character and 'Z' at the end
-    #time_str = time_str[:8] + 'T' + time_str[8:] + 'Z'
+def is_file_present(filename, download_dir, format):
+    # Get the time string from the filenames after 'search' command 
+    # example of name file before costumization: 
+    # MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA 
+    time_str = filename.split('.')[0].split('-')[-1]    
 
     # List all files in the download directory
     existing_files = os.listdir(download_dir)
     
-    # Check if a file for this time period already exists
-    for file in existing_files:
-        #if file.startswith("HRSEVIRI_") and time_str in file.split('_'):
-        if time_str in file.split('.')[0].split('-'):    
+    if format == 'hrit':
+        # hrit filenames: H-000-MSG4__-MSG4________-WV_073___-000003___-202107141200-__
+        # for each time there is a file for each channel and divided in 8 files
+        #get the part of the datestring that refers to the minutes
+        min_str = time_str[10:12]
+        #switch the minutes that indicate the end of the scan to the minutes that indicate the 'rounded' start of the scan
+        if '00'<min_str<'15': min_str='00'
+        if '15'<min_str<'30': min_str='15' 
+        if '30'<min_str<'45': min_str='30'
+        if '45'<min_str<'59': min_str='45'
+        time_str = time_str[0:10]+min_str 
+        #count how many files have the correspoding timestring in the filename
+        count = sum(1 for filename in existing_files if time_str in filename)
+        #check if all the channels (11) and each single scan (8) are present
+        if count == 11*8:
             return True
-    return False
+        return False
+    else:   
+        # Check if a file for this time period already exists
+        for file in existing_files:
+            # filename after costumization depends on the format:
+            if format == 'msgnative':
+                #nat filenames example: MSG3-SEVI-MSG15-0100-NA-20230731215741.559000000Z-NA.subset.nat
+                time_str_cust = file.split('.')[0].split('-')
+            elif format == 'netcdf4':
+                #nc filename example: HRSEVIRI_20210715T101510Z_20210715T102742Z_epct_34b8524d_PC.nc
+                time_str = time_str = time_str[:8] + 'T' + time_str[8:] + 'Z' # Insert 'T' after the 8th character and 'Z' at the end
+                time_str_cust = file.split('.')[0].split('_')
+            else:
+                logging.warning("format not recognized.")
+            #check if the timestring is in the filename
+            if time_str in time_str_cust:    
+                return True
+        return False
 
-# Filter data_items to exclude files that are already present TODO not possible because item names are different from the downloaded custmized products
-data_items = [item for item in data_items if not is_file_present(str(item), download_dir)]
+# Filter data_items to exclude files that are already present 
+data_items = [item for item in data_items if not is_file_present(str(item), download_dir, format)]
 
 # Handle no data available
 if not data_items:
@@ -133,11 +154,10 @@ logging.info(f'Found Datasets: {len(data_items)} datasets for the given time ran
 # Define the customization chain for all channels and specified domain
 chain = eumdac.tailor_models.Chain(
     product='HRSEVIRI',
-    format='msgnative', #'netcdf4',
+    format= format, 
     #projection='geographic', #this is needed to get the lat/lon coordinates, but it slows down the process
-    roi={'NSWE': [north, south, west, east]}
+    #roi={'NSWE': [north, south, west, east]} #roi dones't work with hrit format
 )
-
 
 # Process each data item
 for item in data_items:
@@ -238,7 +258,6 @@ logging.info("Data processing complete.")
 #TODO try to customize and download the failed process
 #if os.path.getsize(path_to_failed_file) > 0:
     
-
 # End time
 end_time = time.time()
 
