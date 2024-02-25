@@ -12,7 +12,7 @@ begin_time = time.time()
 
 # Define the download directory
 #download_dir = '/data/sat/msg/test/'  
-download_dir = '/work/NWC_SAF/import/Sat_data/'  
+download_dir = '/work/NWC_GEO/import/Sat_data/'  
 os.makedirs(download_dir, exist_ok=True)
 
 path_to_failed_file = download_dir+'failed_customizations.txt'
@@ -116,8 +116,8 @@ def is_file_present(filename, download_dir, format):
         time_str = time_str[0:10]+min_str 
         #count how many files have the correspoding timestring in the filename
         count = sum(1 for filename in existing_files if time_str in filename)
-        #check if all the channels (11) and each single scan (8) are present
-        if count == 11*8:
+        #check if all the channels (11) and each single scan (8) + PRO and EPI are present
+        if count == 90:
             return True
         return False
     else:   
@@ -237,10 +237,16 @@ for item in data_items:
                 with customisation.stream_output(output) as stream, open(file_path, mode='wb') as fdst:
                     shutil.copyfileobj(stream, fdst)
                 logging.info(f"Downloaded {file_path}")
-            except IOError as io_error:
-                logging.error(f"IO Error while downloading {file_path}: {io_error}")
+            except requests.exceptions.HTTPError as http_error:
+                # Specifically catching the HTTPError now
+                logging.error(f"HTTP Error while downloading {file_path}: {http_error}")
+                # For example, to specifically log unauthorized errors:
+                if http_error.response.status_code == 401:
+                    logging.error(f"Unauthorized access error for {file_path}. Check your authentication credentials.")
             except requests.exceptions.RequestException as request_error:
                 logging.error(f"Request Error while downloading {file_path}: {request_error}")
+            except IOError as io_error:
+                logging.error(f"IO Error while downloading {file_path}: {io_error}")
         else:
             logging.info(f"File {file_path} already exists. Skipping download.")
 
