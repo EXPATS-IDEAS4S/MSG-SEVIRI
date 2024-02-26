@@ -23,26 +23,8 @@ logging.basicConfig(level=logging.INFO, filename=path_to_log_file, filemode='w',
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Set your credentials (find them in EUMETSAT profile portal)
-#Daniele Credentials
-consumer_key = 'MwVGCDXIMtsN7Cj28dGBz4UcZYga'
-consumer_secret = 'Lepxj10Ag3p2R5FVdpwvP08Ny_Ia'
-#Claudia Credentials
-#consumer_key = 'xoRBoRjjpsbmX2ZzBVY1UbKcmVAa'
-#consumer_secret = 'owcUIfV6kGNupOl75P6xQ9vKrssa'
-
-# For security resaon, they can be set up as enviromental variables using exports from the terminal, e.g.
-# export CONSUMER_KEY=MwVGCDXIMtsN7Cj28dGBz4UcZYga
-# export SECRET=Lepxj10Ag3p2R5FVdpwvP08Ny_Ia
-
-#consumer_key = os.environ.get('CONSUMER_KEY')
-#consumer_secret = os.environ.get('SECRET')
-
-# Handle cases where environment variables are not set
-#if not consumer_key or not consumer_secret:
-#    raise EnvironmentError("Consumer key or secret not found in environment variables")
-#    #logging.warning("Consumer key or secret not found in environment variables")
-#    exit()
-
+#import them from a py file: Daniele Credentials
+from credentials import consumer_key, consumer_secret
 credentials = (consumer_key, consumer_secret)
 
 # Create an access token
@@ -183,12 +165,6 @@ for item in data_items:
             # Write in a file the item that failed to be customized
             with open(path_to_failed_file, "a") as file:
                 file.write(f"{item}\n")
-
-            # # Optionally, delete the failed customisation
-            # try:
-            #     customisation.delete()
-            # except (eumdac.datatailor.CustomisationError, requests.exceptions.RequestException) as error:
-            #     logging.error("Error during customisation deletion:", error)
 
             skip_to_next_item = True  # Set the flag to skip to the next item
             break  # Exit the while loop
