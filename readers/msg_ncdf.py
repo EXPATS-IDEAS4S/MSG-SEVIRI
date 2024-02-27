@@ -4,9 +4,10 @@ Code to read msg files in ncdf format converted using satpy
     
     
     
-from readers.files_dirs import filelist_ncdf, orography_file
+from readers.files_dirs import filelist_ncdf, orography_file, path_ncdf
 import xarray as xr
-    
+import numpy as np
+import glob
 
 
 DROP_VARIABLES = [
@@ -49,3 +50,24 @@ def read_orography():
     data = xr.open_dataset(orography_file)
     return data
     
+    
+def read_ncdf_day(date):
+    """
+    reads all files of a day and after merging, deletes the ncdf 
+
+    Args:
+        date (string): selected date
+
+    Returns:
+        data: xarray dataset of merged single files for the day
+    """
+    # read filelist of files belonging to the same day
+    filelist = np.sort(glob.glob(path_ncdf+'*'+date+'*'))
+
+    print("number of files", len(filelist))
+    data = xr.open_mfdataset(filelist)
+    data = data.chunk({'end_time': len(data.end_time)})
+    data = data.rename({'end_time':'time'})
+
+    
+    return data, filelist
