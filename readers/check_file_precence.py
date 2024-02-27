@@ -13,7 +13,7 @@ def is_file_present(filename, download_dir, format):
     # List all files in the download directory
     existing_files = os.listdir(download_dir)
     
-    if format == 'hrit':
+    if format == 'hrit' or format == 'hrit_compressed':
         # hrit filenames: H-000-MSG4__-MSG4________-WV_073___-000003___-202107141200-__
         # for each time there is a file for each channel and divided in 8 files
         #get the part of the datestring that refers to the minutes
@@ -25,7 +25,7 @@ def is_file_present(filename, download_dir, format):
         if '45'<min_str<'59': min_str='45'
         time_str = time_str[0:10]+min_str 
         #count how many files have the correspoding timestring in the filename
-        count = sum(1 for filename in existing_files if time_str in filename)
+        count = sum(1 for filename in existing_files if time_str in filename.split('-'))
         #check if all the channels (11) and each single scan (8) + PRO and EPI are present
         if count == 90:
             return True

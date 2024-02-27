@@ -23,6 +23,10 @@ PRODUCT="EO:EUM:DAT:MSG:HRSEVIRI"
 START_TIME="2021-07-12T00:00"
 END_TIME="2021-07-16T00:00"
 FORMAT='hrit' #'msgnative','netcdf4',
+#ROI=[52, 48, 5, 9] #NSWE
+
+# Number of files to process at a time
+batch_size=10
 
 # Define the directory where to save the downloaded data
 DOWNLOAD_DIR='/work/NWC_GEO/import/Sat_data/'
@@ -48,10 +52,7 @@ eumdac search -c $PRODUCT --start $START_TIME --end $END_TIME  > products.txt
 echo "Number of lines before checking: $(wc -l < products.txt)"
 
 # Temporary file to store products that don't exist
-temp_file=$(mktemp)
-
-# Ensure that the temporary file is removed on script exit
-trap 'rm -f "$temp_file"' EXIT
+touch temp_products.txt
 
 # Read each line in products.txt
 while IFS= read -r line; do
@@ -61,12 +62,15 @@ while IFS= read -r line; do
     
     # check using grep
     if echo "$result" | grep -q "does not exist"; then
-        echo "$line" >> "$temp_file"
+        echo "$line" >> temp_products.txt
     fi
 done < "products.txt"
 
 # Replace the original products.txt with the temp file containing only products that don't exist
-mv "$temp_file" "products.txt"
+mv "temp_products.txt" "products.txt"
+
+#remove temp file
+rm temp_products.txt
 
 # Print the number of lines after checking
 echo "Number of lines after checking: $(wc -l < products.txt)"
@@ -75,9 +79,6 @@ echo "Number of lines after checking: $(wc -l < products.txt)"
 if [ -s "products.txt" ]; then
     # File exists and has content, continue with the rest of the script
     echo "Files are available for download."
-
-    # Number of files to process at a time
-    batch_size=10
 
     # Count the total number of lines/files in products.txt
     total_lines=$(wc -l <products.txt)
@@ -102,7 +103,7 @@ if [ -s "products.txt" ]; then
         echo "Processing batch $batch:"
         
         # Download the products without saving output to a log file
-        yes | eumdac download -c $PRODUCT -p @temp_batch_files.txt --tailor 'product: HRSEVIRI, format: '$FORMAT, -o $DOWNLOAD_DIR  
+        eumdac download -c $PRODUCT -p @temp_batch_files.txt --tailor 'product: HRSEVIRI, format: '$FORMAT', compression: zip' -o $DOWNLOAD_DIR -y 
         #eumdac download -c $PRODUCT --start $START_TIME --end $END_TIME --tailor 'product: HRSEVIRI, format: msgnative, roi: {'NSWE': [52, 48, 5, 9]}' -o $DOWNLOAD_DIR
         #eumdac download -c $PRODUCT --start $START_TIME --end $END_TIME --tailor 'product: HRSEVIRI, projection: geographic, format: netcdf4, roi: {'NSWE': [52, 48, 5, 9]}' -o $DOWNLOAD_DIR 
         #eumdac download -c $PRODUCT --start $START_TIME --end $END_TIME --bbox 5 48 9 52 -o $DOWNLOAD_DIR 
@@ -113,10 +114,10 @@ if [ -s "products.txt" ]; then
 
         #delete the customization
 
-        #remove entire order history
+        #remove entire order history, maybe not needed!
         eumdac order delete --all
 
-        #clean all old customization to free up memory
+        #clean all old customization to free up memory, maybe not needed!
         eumdac tailor clean --all
     done
 
