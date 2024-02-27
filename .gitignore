@@ -4,6 +4,14 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 
-
 # file containing credentials
 credentials.py
+
+# file for testing functions
+test_functions.py
+
+# nohup file
+nohup.out
+
+#product files
+products.txt
