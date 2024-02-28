@@ -6,7 +6,7 @@ code to plot distributions of values of channels over expats domain
     
 from readers.msg_ncdf import read_ncdf, read_orography
 
-from readers.files_dirs import path_figs, raster_filename, orography_file
+from readers.files_dirs import path_figs, path_dir_tree, raster_filename, orography_file
 from figures.domain_info import domain_expats, domain_dfg
 from figures.mpl_style import CMAP
 import cartopy.crs as ccrs
@@ -21,7 +21,11 @@ import rasterio
 
 def main():
     
+    # read data of the month of july
+    yy = '2023'
+    mm = '07'
     
+    # loop on days
     # reading input files
     data = read_ncdf()
     print(data)
