@@ -69,9 +69,6 @@ done < "products.txt"
 # Replace the original products.txt with the temp file containing only products that don't exist
 mv "temp_products.txt" "products.txt"
 
-#remove temp file
-rm temp_products.txt
-
 # Print the number of lines after checking
 echo "Number of lines after checking: $(wc -l < products.txt)"
 
@@ -139,6 +136,3 @@ elapsed_time=$((end_time - start_time))
 
 # Print the elapsed time to the log file
 echo "Elapsed Time: $elapsed_time seconds" >> "$LOG_FILE"
-
-exit 1
-
