@@ -11,7 +11,8 @@ import glob
 
 # list of channel name strings 
 ch_list = ['IR_108', 'IR_039', 'IR_016', 'IR_087', 'IR_097', 'IR_120', 'IR_134', 'VIS006', 'VIS008', 'WV_062', 'WV_073']
-
+ch_min_list = [200., 200.,  0., 200., 220.,  190., 200.,   0.,   0., 210., 200.]
+ch_max_list = [310., 350., 70., 310., 280.,  310., 280., 100., 100., 250., 270.]
 
 DROP_VARIABLES = [
     "IR_108",
