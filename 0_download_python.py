@@ -16,7 +16,7 @@ os.makedirs(download_dir, exist_ok=True)
 
 # define dir for failed files 
 path_to_failed_file = '/data/sat/msg/failed_customizations.txt'
-os.makedirs(path_to_failed_file, exist_ok=True)
+#os.makedirs('/data/sat/msg/', exist_ok=True)
 
 
 # Basic configuration of logging 
@@ -77,8 +77,8 @@ selected_collection = datastore.get_collection(collection_name)
 logging.info(f"{selected_collection} - {selected_collection.title}")
 
 # Define time span and geographical coordinates --> Ahr Floods July 2021
-start = datetime.datetime(2023, 7, 1, 0, 0)
-end = datetime.datetime(2023, 7, 15, 0, 0)
+start = datetime.datetime(2023, 7, 15, 0, 0)
+end = datetime.datetime(2023, 7, 31, 0, 0)
 north, south, east, west = 51.5, 42, 16, 5  #expats
 #north, south, east, west = 52, 48, 9, 5  #Germany Flood
 
