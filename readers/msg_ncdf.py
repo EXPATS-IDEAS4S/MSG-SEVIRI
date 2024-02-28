@@ -9,8 +9,12 @@ import xarray as xr
 import numpy as np
 import glob
 
+# list of channel name strings 
+ch_list = ['IR_108', 'IR_039', 'IR_016', 'IR_087', 'IR_097', 'IR_120', 'IR_134', 'VIS006', 'VIS008', 'WV_062', 'WV_073']
+
 
 DROP_VARIABLES = [
+    "IR_108",
     "WV_062",
     "WV_073",
     "VIS008",
@@ -25,13 +29,22 @@ DROP_VARIABLES = [
 ]
 
 
-def read_ncdf(path_to_files):
+def read_ncdf(path_to_files, var_to_read):
     
     """
     function to read ncdf list 
     """
+    # create a list of the channel to read
+    list_to_read = [var_to_read]
+    
+    # get all elements of DROP_VARIABLES not in list_to_read
+    l3 = [x for x in DROP_VARIABLES if x not in list_to_read]
+    
+    # listing files to be read
     filelist = sorted(glob.glob(path_to_files+'*.nc'))
-    data = xr.open_mfdataset(filelist, drop_variables=DROP_VARIABLES)
+    
+    # read dataset
+    data = xr.open_mfdataset(filelist, drop_variables=l3)
     
     #data_sel = data.isel(end_time=0)
 

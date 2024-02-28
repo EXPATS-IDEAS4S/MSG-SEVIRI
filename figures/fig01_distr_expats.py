@@ -27,7 +27,7 @@ def main():
     
     # loop on days
     # reading input files
-    data = read_ncdf(path_dir_tree+'/'+yy+'/'+mm+'/')
+    data = read_ncdf(path_dir_tree+'/'+yy+'/'+mm+'/', "IR_108")
     
     # reading dimensions of the data
     n_samples, dim_y, dim_x = np.shape(data.IR_108.values)
