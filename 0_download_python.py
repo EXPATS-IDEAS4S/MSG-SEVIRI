@@ -25,12 +25,6 @@ logging.basicConfig(level=logging.INFO, filename=download_dir+'data_tailor.log',
 
 from readers.credentials import consumer_key, consumer_secret
 
-# For security resaon, they can be set up as enviromental variables using exports from the terminal, e.g.
-# export CONSUMER_KEY=MwVGCDXIMtsN7Cj28dGBz4UcZYga
-# export SECRET=Lepxj10Ag3p2R5FVdpwvP08Ny_Ia
-
-#consumer_key = os.environ.get('CONSUMER_KEY')
-#consumer_secret = os.environ.get('SECRET')
 
 # Handle cases where environment variables are not set
 #if not consumer_key or not consumer_secret:
