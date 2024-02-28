@@ -25,14 +25,13 @@ DROP_VARIABLES = [
 ]
 
 
-def read_ncdf():
+def read_ncdf(path_to_files):
     
     """
     function to read ncdf list 
     
-    """
     
-    data = xr.open_mfdataset(filelist_ncdf, drop_variables=DROP_VARIABLES)
+    data = xr.open_mfdataset(, drop_variables=DROP_VARIABLES)
     
     data_sel = data.isel(end_time=0)
 
@@ -71,3 +70,21 @@ def read_ncdf_day(date):
 
     
     return data, filelist
+
+
+
+def read_dates(filelist_ncdf):
+    """
+    function to extract dates from filenames
+
+    Args:
+        filelist_ncdf (list of strings): list containing all filenames
+    """    
+    # number of characters before the date
+    len_path = len(path_ncdf)
+    start = len('MSG3-SEVI-MSG15-0100-NA-')
+    string_len = len('20230711')
+    dates_all = [file[len_path+start:len_path+start+string_len] for file in filelist_ncdf]
+    dates = np.asarray(dates_all)
+    
+    return np.unique(dates)

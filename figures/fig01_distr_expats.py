@@ -27,7 +27,7 @@ def main():
     
     # loop on days
     # reading input files
-    data = read_ncdf()
+    data = read_ncdf(path_dir_tree+'/'+yy+'/'+mm+'/')
     print(data)
     
     # reading dimensions of the data

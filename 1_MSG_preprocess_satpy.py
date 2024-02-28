@@ -15,6 +15,7 @@ from glob import glob
 import xarray as xr
 import datetime
 import os
+import numpy as np
 import time
 
 # Start time
@@ -32,8 +33,10 @@ begin_time = time.time()
 #print(satpy.available_readers())
 #seviri_l1b_native
 
-from readers.files_dirs import path_to_file, path_to_cth, nat_fnames, cth_fnames, path_ncdf
+from readers.files_dirs import extract_yymmdd, path_to_file, path_to_cth, nat_fnames, path_dir_tree,  cth_fnames, path_ncdf
 from figures.domain_info import domain_expats
+from readers.msg_ncdf import read_dates
+
 
 open_data = True
 parallax_correction = False
@@ -47,9 +50,15 @@ def main():
     #Open Data#
     ###########
     if open_data:
-
+        
+        print(len(nat_fnames))
+        # remove from nat filelist the files in ncdf that are already processed
+        nat_fnames_new = remove_processed_files(nat_fnames, path_dir_tree)
+        
+        print(len(nat_fnames_new))
+        
         #Read nat files of msg data at different temporal steps
-        for t,f in enumerate(nat_fnames):
+        for t,f in enumerate(nat_fnames_new):
                 
             # reading file name
             file = f.split('/')[-1]
@@ -127,7 +136,58 @@ def main():
     with open(output_file_path, 'w') as file:
         print(f"Elapsed time: {elapsed_time} seconds", file=file)
     
+
+
+
+
+def read_dates_nat(nat_fnames):
+    """
+    function to extract dates from filenames
+
+    Args:
+        filelist_ncdf (list of strings): list containing all filenames
+    """    
+    # number of characters before the date
+    len_path = len(path_to_file)
+    start = len('MSG3-SEVI-MSG15-0100-NA-')
+    string_len = len('20230711')
+    dates_all = [file[len_path+start:len_path+start+string_len] for file in nat_fnames]
+    dates = np.asarray(dates_all)
     
+    return np.unique(dates)
+    
+    
+def remove_processed_files(nat_fnames, path_dir_tree):
+    """
+    removes filenames already processed by the nat filelist
+
+    Args:
+        nat_fnames (list): list of nat filenames
+        path_dir_tree (string): string for output path of ncdf files 
+        
+    Dependencies:
+    read_dates_nat 
+    
+    """
+    
+    # read dates from nat filelist
+    dates = read_dates_nat(nat_fnames)
+
+    # find dates to drop and if file exists, drop filename from list
+    for ind_date, date in enumerate(dates):
+        
+        # reading year, month and day for building folder path
+        yy,mm,dd = extract_yymmdd(date)
+        
+        # drop filename from nat filelist if daily ncdf file is created
+        if os.path.exists( path_dir_tree+yy+'/'+mm+'/'+date+'_MSG_SEVIRI_EXPATS.nc'):
+            # removing files with list comphrension
+            for i, filename in enumerate(sorted(glob(path_to_file+'MSG3-SEVI-MSG15-0100-NA-'+date+"*"))):
+                nat_fnames.remove(filename) 
+
+    return nat_fnames
+
+
 def get_lats_lons(scn, domain, path_out):
         """
         read satellite scene and extracts lats lons 

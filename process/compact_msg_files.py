@@ -2,8 +2,9 @@
 Code to build folder structure and copy ncdf files after merging them in the right folder
 """
 
-from readers.files_dirs import path_ncdf, filelist_ncdf, path_dir_tree
-from readers.msg_ncdf import read_ncdf_day
+
+from readers.files_dirs import path_ncdf, filelist_ncdf, path_dir_tree, extract_yymmdd
+from readers.msg_ncdf import read_ncdf_day, read_dates
 import numpy as np
 import os
 import glob
@@ -87,36 +88,7 @@ def compress_and_store(data, date, path):
                 'time':{"units": "seconds since 2020-01-01", "dtype": "i4"}})
 
 
-  
-def extract_yymmdd(date):
-    """
-    Extract yy mm and day from the given date
-    Args:
-        date (_type_): _description_
-    """
-    yy = date[0:4]
-    mm = date[4:6]
-    dd = date[6:8]
-    return yy, mm, dd
 
-
-def read_dates(filelist_ncdf):
-    """
-    function to extract dates from filenames
-
-    Args:
-        filelist_ncdf (list of strings): list containing all filenames
-    """
-    print(filelist_ncdf)
-    
-    # number of characters before the date
-    len_path = len(path_ncdf)
-    start = len('MSG3-SEVI-MSG15-0100-NA-')
-    string_len = len('20230711')
-    dates_all = [file[len_path+start:len_path+start+string_len] for file in filelist_ncdf]
-    dates = np.asarray(dates_all)
-    
-    return np.unique(dates)
 
 if __name__ == "__main__":
     main()
