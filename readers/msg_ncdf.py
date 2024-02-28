@@ -29,15 +29,15 @@ def read_ncdf(path_to_files):
     
     """
     function to read ncdf list 
+    """
+    filelist = sorted(glob.glob(path_to_files+'*.nc'))
+    data = xr.open_mfdataset(filelist, drop_variables=DROP_VARIABLES)
     
-    
-    data = xr.open_mfdataset(, drop_variables=DROP_VARIABLES)
-    
-    data_sel = data.isel(end_time=0)
+    #data_sel = data.isel(end_time=0)
 
     # removing time dimension from lat and lons
-    data['lat'] = (('y','x'), data_sel['lon'].values)
-    data['lon'] = (('y','x'), data_sel['lat'].values)
+    #data['lat'] = (('y','x'), data_sel['lon'].values)
+    #data['lon'] = (('y','x'), data_sel['lat'].values)
     #data = data.drop_vars('lon')
     #data = data.drop_vars('lat')
     
@@ -88,3 +88,14 @@ def read_dates(filelist_ncdf):
     dates = np.asarray(dates_all)
     
     return np.unique(dates)
+
+
+
+def read_lat_lon_file():
+    """
+    read lat lon file and give as output the lats lons 
+    """
+    
+    data = xr.open_dataset('/data/sat/msg/lat_lon_grid.nc')
+    
+    return data.lon.values, data.lat.values
