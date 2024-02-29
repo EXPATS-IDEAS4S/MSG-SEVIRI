@@ -1,13 +1,14 @@
 """
-code to derive spectral features useful for detecting deep convection
-and precipitation, based on master thesis of Claudia
+code to plot channel and features distributions
 
 """
-from readers.msg_ncdf import read_ncdf, ch_list, ch_max_list, ch_min_list
+from readers.msg_ncdf import read_ncdf, ch_list, ch_max_list, ch_min_list, feature_list
 from readers.files_dirs import path_dir_tree, path_figs
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import xarray as xr
+
 
 def main():
 
@@ -15,7 +16,6 @@ def main():
     yy = '2023'
     mm = '07'
     
-
     # derive distribution of values
     for i, ch in enumerate(ch_list):
         
@@ -34,18 +34,35 @@ def main():
         # plot distribution of values for the selected channel
         plot_distribution_channel(channel, ch, ch_min, ch_max, path_figs)
     
+   
+    # loop on feature list
+    for i, f_name in enumerate(feature_list):
+
+        # read feature file
+        data = xr.open_dataset(path_figs+yy+mm+'_'+f_name+'_MSG_SEVIRI_EXPATS.nc')
+        
+        f = data.feature.values.flatten()
+        ch_min = np.nanmin(f)
+        ch_max = np.nanmax(f)
+        
+        plot_distribution_channel(f, f_name, ch_min, ch_max, path_figs)
     
+  
 def plot_distribution_channel(channel, ch_name, ch_min, ch_max, path_out):
     """
     plot distribution of a single channel
     """   
 
     fig, ax= plt.subplots(figsize=(8,8))
-    ax.spines["top"].set_linewidth(3)
-    ax.spines["right"].set_linewidth(3)
-    ax.spines["bottom"].set_linewidth(3)
-    ax.spines["left"].set_linewidth(3)
-    
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_linewidth(3)
+    ax.spines['left'].set_linewidth(3)
+    ax.tick_params(which='minor', length=5, width=3, labelsize=20)
+    ax.tick_params(which='major', length=7, width=3, labelsize=20)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+    ax.set_ylabel('Normalized occurrences', fontsize=25)
     ax.hist(channel, 
             range=[ch_min, ch_max], 
             density=True, 
@@ -53,8 +70,7 @@ def plot_distribution_channel(channel, ch_name, ch_min, ch_max, path_out):
             linewidth=4)
     
 
-    ax.set_xlabel(ch_name)
-    ax.set_ylabel('Norm occ []')
+    ax.set_xlabel(ch_name, fontsize=25)
     ax.tick_params(which='minor', length=5, width=2)
     ax.tick_params(which='major', length=7, width=3)
 

@@ -28,6 +28,8 @@ filelist_ncdf = sorted(glob(path_ncdf+"MSG*.nc"))
 # file path for figures
 path_figs = '/net/ostro/figs_proposal_TEAMX/'
 
+# path to features test
+path_features = '/net/ostro/figs_proposal_TEAMX/'
 
 # file containing orography for expats domain
 orography_file = '/net/ostro/figs_proposal_TEAMX/orography_expats_high_res.nc'

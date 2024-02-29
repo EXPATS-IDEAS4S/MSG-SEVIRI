@@ -37,18 +37,20 @@ def main():
     # calculate 10th percentile
     data_variable = data['IR_108']
     data_variable = data_variable.chunk({'time': len(data_variable.time)})
-    q10 = data_variable.quantile(0.1, "time")
-    
+    #q10 = data_variable.quantile(0.1, "time")
+    #q50 = data_variable.quantile(0.5, "time")
+    q05 = data_variable.quantile(0.05, "time")
+
     #print(np.shape(IR_108_10perc))    
-    print(np.nanmax(q10), np.nanmin(q10))
+    #print(np.nanmax(q10), np.nanmin(q10))
     
     # plot 10percentile
     print('plot map of percentile')
     lons, lats = read_lat_lon_file()
     
     #map_percentiles(IR_108_10perc, data.lat.values, data.lon.values, domain_expats, path_figs)
-    #plot_msg(lons, lats, q10, '10th percentiles 10.8 micron', CMAP, domain_expats, path_figs, 'expats')
-    plot_msg(lons, lats, q10, '10th percentiles 10.8 micron', CMAP, domain_dfg, path_figs, 'dfg')
+    plot_msg(lons, lats, q05, '5th percentiles 10.8 micron', CMAP,  '5th percentiles 10.8 micron', domain_expats, path_figs, 'expats', True, vmin, vmax)
+    plot_msg(lons, lats, q05, '5th percentiles 10.8 micron', CMAP,  '5th percentiles 10.8 micron', domain_dfg, path_figs, 'dfg', True, vmin, vmax)
 
 def calc_mid_points_pairs_array(x):
     """
@@ -64,7 +66,7 @@ def calc_mid_points_pairs_array(x):
     return y
 
 
-def plot_msg(lons, lats, variable, label, cmap, domain, path_out, key):
+def plot_msg(lons, lats, variable, label, cmap, cbar_title, domain, path_out, key, back_transparent, vmin, vmax):
     """
     plot map of the variable over the defined domain
 
@@ -74,10 +76,14 @@ def plot_msg(lons, lats, variable, label, cmap, domain, path_out, key):
         variable (matrix): variable to plot
         label (string): string for plot filename
         cmap (colormap): color map 
+        cbar_title (string): title for color bar
         domain (array): minlon, maxlon, minlat, maxlat
         path_out (string): path where to save the plot
         key (string): string possible "expats" or "dfg"
-    
+        back_transparent (boolean): True or False - true means transparent background
+        vmin (float): value min in colorbar
+        vmax (float): max value in colorbar
+        
     Dependencies:
     plot_cities_expats, 
     plot_local_dfg
@@ -108,7 +114,7 @@ def plot_msg(lons, lats, variable, label, cmap, domain, path_out, key):
         
         
         #plot now contour levels for the variable field
-        BT_levels = np.linspace(np.nanmin(variable), 250., 20) # scaled for zoomed region
+        BT_levels = np.linspace(np.nanmin(variable), np.nanmax(variable), 20) # scaled for zoomed region
         # plotting on the back, invisible in the end, the field for getting the colormap
         mesh_transp =  ax.contourf(lons, 
                         lats, 
@@ -116,11 +122,13 @@ def plot_msg(lons, lats, variable, label, cmap, domain, path_out, key):
                         transform=ccrs.PlateCarree(), 
                         levels=BT_levels, 
                         alpha=1.,
-                        cmap=cmap)
+                        cmap=cmap, 
+                        vmin=vmin, 
+                        vmax=vmax)
         
         plt.colorbar(mesh_transp,
                      ax=[ax],
-                     label='10.8 $\mu$m 10th quantile Brightness Temperature (K)', 
+                     label=cbar_title, 
                      shrink=0.6)
                
         # reading orography data from raster file
@@ -161,16 +169,17 @@ def plot_msg(lons, lats, variable, label, cmap, domain, path_out, key):
         #cbar.ax.set_xticklabels(['225', '230', '235', '240', '245'])  # horizontal colorbar
 
     elif key == 'expats':
-        
+        var_levels = np.linspace(vmin, vmax, 20)
         # plot 10th percentile as filled contours
         mesh = ax.contourf(lons, 
                             lats, 
                             variable, 
                             cmap=cmap, 
                             transform=ccrs.PlateCarree(), 
-                            vmin=230, 
-                            vmax=270) 
-        cbar = plt.colorbar(mesh, label='10.8 $\mu$m 10th quantile Brightness Temperature (K)', shrink=0.6)
+                            levels=var_levels, 
+                            vmin=vmin, # 230
+                            vmax=vmax) # 270
+        cbar = plt.colorbar(mesh, label=cbar_title, shrink=0.6)
 
     ax.add_feature(cfeature.LAKES)
     ax.add_feature(cfeature.RIVERS)
@@ -200,7 +209,7 @@ def plot_msg(lons, lats, variable, label, cmap, domain, path_out, key):
         os.path.join(path_out, label+"_"+key+".png"),
         dpi=300,
         bbox_inches="tight",
-        transparent=True,
+        transparent=back_transparent,
         )
 
     plt.close()
