@@ -20,8 +20,8 @@ eumdac set-credentials $ConsumerKey $ConsumerSecret
 
 # Define time range and product details
 PRODUCT="EO:EUM:DAT:MSG:HRSEVIRI"
-START_TIME="2021-07-12T00:00"
-END_TIME="2021-07-16T00:00"
+START_TIME="2023-07-01T00:00"
+END_TIME="2023-07-16T00:00"
 FORMAT='hrit' #'msgnative','netcdf4',
 #ROI=[52, 48, 5, 9] #NSWE
 
@@ -29,7 +29,7 @@ FORMAT='hrit' #'msgnative','netcdf4',
 batch_size=10
 
 # Define the directory where to save the downloaded data
-DOWNLOAD_DIR='/work/NWC_GEO/import/Sat_data/'
+DOWNLOAD_DIR='/net/yube/MSG/HRIT/2023/07/'
 LOG_FILE=${DOWNLOAD_DIR}"logfile.txt"
 # Path to the Python script
 python_script_path="/home/dcorradi/Documents/Codes/MSG-SEVIRI/readers/check_file_precence.py"
@@ -136,3 +136,5 @@ elapsed_time=$((end_time - start_time))
 
 # Print the elapsed time to the log file
 echo "Elapsed Time: $elapsed_time seconds" >> "$LOG_FILE"
+
+echo "Download concluded!"

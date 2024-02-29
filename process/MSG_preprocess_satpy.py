@@ -1,44 +1,62 @@
 """
-Open MSG-SEVIRI nat files fully disk with Satpy 
-Crop it to area of interest, project it in latlon grid and convert it to netCDF
+Open MSG-SEVIRI files with Satpy 
+Crop it to area of interest, 
+project it in latlon grid 
+and convert it to netCDF
+if needed perfrom parallax correction
+and regrid the data in a regular lat-lon grid
 
-author: Daniele Corradini
-last Edit: December 2023
+@author: Daniele Corradini
 """
-
-##################
-#import libraries#
-##################
-
 import satpy 
 from glob import glob
 import xarray as xr
 import datetime
 import os
 import time
+import numpy as np
 
 # Start time
 begin_time = time.time()
 
 #Import parameters from config file
 from config_satpy_process import path_to_file, path_to_cth, natfile, cth_file
-from config_satpy_process import lonmin, lonmax, latmax, latmin, channels, parallax_correction
+from config_satpy_process import lonmin, lonmax, latmax, latmin, channels, step_deg
+from config_satpy_process import parallax_correction, regular_grid
 from config_satpy_process import msg_reader, cth_reader
+from regrid_functions import regrid_data, fill_missing_data_with_interpolation, generate_regular_grid
 
 #open all MSG files in directory 
 fnames = sorted(glob(path_to_file+natfile))
-print(fnames)
+#print(fnames)
 
 #open all CTH files in directoy
 cth_fnames = sorted(glob(path_to_cth+cth_file))
+
+#find a regular grid
+if regular_grid:
+    lat_arr,  lon_arr = generate_regular_grid(latmin,latmax,lonmin,lonmax,step_deg,path_to_file)
+    
+    # Generate grid points
+    lat_reg_grid, lon_reg_grid = np.meshgrid(lat_arr, lon_arr, indexing='ij')
 
 #Read data at different temporal steps
 for t,f in enumerate(fnames):
     # count over the loop
     print(f'Processing file number {t+1}/{len(fnames)})')
 
+    #create empty Dataset
+    ds = xr.Dataset()
+
     #get start and end time from filename format yyyymmddhhmmss
     end_scan_time = f.split('/')[-1].split('-')[5].split('.')[0]
+    #min_str = end_scan_time[10:12]
+    #switch the minutes that indicate the end the scan to the minutes that indicate the 'rounded' start of the scan
+    #if '00'<min_str<'15': min_str='00'
+    #if '15'<min_str<'30': min_str='15' 
+    #if '30'<min_str<'45': min_str='30'
+    #if '45'<min_str<'59': min_str='45'
+    #time_str = end_scan_time[0:10]+min_str
     time_str = datetime.datetime.strptime(end_scan_time, "%Y%m%d%H%M%S")
     print(time_str)
     
@@ -67,20 +85,40 @@ for t,f in enumerate(fnames):
             #print(np.shape(sat_lat_crop),sat_lat_crop)
             #print(np.shape(sat_lon_crop),sat_lon_crop)
 
-            # create DataArrays with the coordinates using cloud mask grid
-            lon_da = xr.DataArray(sat_lon_crop, dims=("y", "x"), name="lon_grid")
-            lat_da = xr.DataArray(sat_lat_crop, dims=("y", "x"), name="lat_grid")
+            if not regular_grid:
+                # create DataArrays with the coordinates using cloud mask grid
+                lon_da = xr.DataArray(sat_lon_crop, dims=("y", "x"), name="lon_grid")
+                lat_da = xr.DataArray(sat_lat_crop, dims=("y", "x"), name="lat_grid")
 
-            # combine DataArrays into xarray object
-            ds = xr.Dataset({"lon_grid": lon_da, "lat_grid": lat_da})
-            #print(ds)
+                # combine DataArrays into xarray object
+                #ds = xr.Dataset({"lon_grid": lon_da, "lat_grid": lat_da})
+                ds["lon_grid"] = lon_da
+                ds["lat_grid"] = lat_da
+                #print(ds)
 
         #get data in the cropped area
         sat_data_crop = crop_scn[ch].values #R/Tb
         #print('sat data',sat_data_crop)
+
+        if parallax_correction:
+            #interpolate the missing points (NaN)
+            sat_data_crop = fill_missing_data_with_interpolation(sat_lat_crop, sat_lon_crop, sat_data_crop)
+
+        if regular_grid:
+            #regrid the sat data to a regular grid
+            sat_data_crop = regrid_data(sat_lat_crop, sat_lon_crop, sat_data_crop, lat_reg_grid, lon_reg_grid)
+            
+            #add channel values to the Dataarray
+            sat_da = xr.DataArray(
+            sat_data_crop,
+            dims=("y", "x"),
+            coords={"lat": ("y", lat_arr), "lon": ("x", lon_arr)},
+            name=str(ch)
+            )
+        else:        
+            sat_da = xr.DataArray(sat_data_crop, dims=("y", "x"), name=str(ch))
         
         #add channel values to the Dataset
-        sat_da = xr.DataArray(sat_data_crop, dims=("y", "x"), name=str(ch))
         ds[str(ch)] = sat_da
 
     # Add a new dimension for the start time coordinate
@@ -97,8 +135,13 @@ for t,f in enumerate(fnames):
         # Create the directory if it doesn't exist
         os.makedirs(proj_file_path)
 
+    # Set the filename for saving
+    filename_save = f.split('/')[-1].split('.')[0]+'.nc'
+    if regular_grid:
+        filename_save = f.split('/')[-1].split('.')[0]+'_regular_grid.nc'
+
     #save the features using a similar name of the HDF5 file but in netCDF format
-    ds.to_netcdf(proj_file_path+f.split('/')[-1].split('.')[0]+'.nc')
+    ds.to_netcdf(proj_file_path+filename_save)
     print('product saved\n')
     
     #print(ds)
