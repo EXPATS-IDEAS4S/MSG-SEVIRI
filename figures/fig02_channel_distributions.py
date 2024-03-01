@@ -17,27 +17,30 @@ def main():
     mm = '07'
     
     # derive distribution of values
-    for i, ch in enumerate(ch_list):
+    #for i, ch in enumerate(ch_list):
         
-        print('processing '+ch)
+    #    print('processing '+ch)
 
         # reading input files
-        data = read_ncdf(path_dir_tree+'/'+yy+'/'+mm+'/', ch)
+    #    data = read_ncdf(path_dir_tree+'/'+yy+'/'+mm+'/', ch)
         
         # reading channel variable 
-        channel = data[ch].values.flatten()
+    #    channel = data[ch].values.flatten()
  
         # call plotting of channel distributions
-        ch_min = ch_min_list[i]
-        ch_max = ch_max_list[i]
+    #    ch_min = ch_min_list[i]
+    #    ch_max = ch_max_list[i]
         
         # plot distribution of values for the selected channel
-        plot_distribution_channel(channel, ch, ch_min, ch_max, path_figs)
+    #    plot_distribution_channel(channel, ch, ch_min, ch_max, path_figs)
     
-   
+    feature_list = ['BTD_3911']
+    
     # loop on feature list
     for i, f_name in enumerate(feature_list):
-
+        
+        print(f_name)
+        
         # read feature file
         data = xr.open_dataset(path_figs+yy+mm+'_'+f_name+'_MSG_SEVIRI_EXPATS.nc')
         

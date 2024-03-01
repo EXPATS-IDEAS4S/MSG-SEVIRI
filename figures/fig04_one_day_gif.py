@@ -28,10 +28,10 @@ def main():
     #vmin = ch_min_list[10]
     #vmax = ch_max_list[10]
     
-    # feature_list = ['BTD_6211', 'BTD_1112', 'BTD_8711', 'RATIO_0616']
-    channel = feature_list[3]
-    vmin = f_min_list[3]
-    vmax = f_max_list[3]
+    #feature_list = ['BTD_3911', 'BTD_6211', 'BTD_1112', 'BTD_8711', 'RATIO_0616']
+    channel = feature_list[-1]
+    vmin = f_min_list[-1]
+    vmax = f_max_list[-1]
     print(vmin, vmax)
     
     # feature title
@@ -79,7 +79,7 @@ def main():
                      vmin, 
                      vmax)
 
-    if not os.path.exists(path_quicklooks+date+'_'+channel+'.gif'):
+    if not os.path.exists(path_quicklooks+'/gifs/'+date+'_'+channel+'.gif'):
         # create animated gif of list of plots
         gif_maker(path_quicklooks, date+'_'+channel, path_quicklooks, 250, channel)
             
@@ -91,6 +91,10 @@ def gif_maker(image_folder, gif_name, gif_path, gif_duration, channel):
 
     Args:
         image_folder (string): folder containing png images
+        gif_name (string): string as filename for gif
+        gif_path (string): path for gif file
+        gif_duration (int): duration for gif (typical 250)
+        channel(string): variable string for the gif
         
     """
     from PIL import Image

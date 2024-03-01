@@ -23,7 +23,7 @@ def main():
     f_names = []
     f_list = []
     
-    if not os.path.exists(path_figs+yy+mm+'_BTD_6211_MSG_SEVIRI_EXPATS.nc'):
+    if not os.path.exists(path_figs+yy+mm+'_BTD_3911_MSG_SEVIRI_EXPATS.nc'):
         print('calculate BTD 3.9-11')
         # read 6.2 micron and 10.8 micron
         ch_039 = read_ncdf(path_dir_tree+'/'+yy+'/'+mm+'/', "IR_039")
@@ -67,7 +67,7 @@ def main():
       
       
     # feature 4: BTD 8.7 - 10.8 large positive for cirrus clouds and lower over water clouds
-    if not os.path.exists(path_figs+yy+mm+'_BTD_87111_MSG_SEVIRI_EXPATS.nc'):
+    if not os.path.exists(path_figs+yy+mm+'_BTD_8711_MSG_SEVIRI_EXPATS.nc'):
         print('calculate BTD 8.7-11')
 
         ch_087 = read_ncdf(path_dir_tree+'/'+yy+'/'+mm+'/', "IR_087")
@@ -75,7 +75,7 @@ def main():
         f_list.append(f4_8711)
         f_names.append('BTD_8711')
 
-   
+    print(f_names)
     print('storing in ncdfs')
     # saving features to ncdf
     for i, ch in enumerate(f_list):
@@ -88,7 +88,7 @@ def main():
         data_vars={
             "feature": (('time','x', 'y'), ch, {'long_name':f_name})},
         coords={
-            "time": (('time',), ch_087['time'].values, {"axis": "T","standard_name": "time"}), # leave units intentionally blank, to be defined in the encoding
+            "time": (('time',), ch_108['time'].values, {"axis": "T","standard_name": "time"}), # leave units intentionally blank, to be defined in the encoding
         },)
         
         compress_and_store(dataset_feature, f_name, '202307', path_figs)
