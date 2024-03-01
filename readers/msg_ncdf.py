@@ -15,9 +15,9 @@ from datetime import datetime
 ch_list = ['IR_108', 'IR_039', 'IR_016', 'IR_087', 'IR_097', 'IR_120', 'IR_134', 'VIS006', 'VIS008', 'WV_062', 'WV_073']
 ch_min_list = [200., 200.,  0., 200., 220.,  190., 200.,   0.,   0., 210., 200.]
 ch_max_list = [310., 350., 70., 310., 280.,  310., 280., 100., 100., 250., 270.]
-feature_list = ['BTD_6211', 'BTD_1112', 'BTD_8711', 'RATIO_0616']
-f_max_list = [ 10., 10., 10., 1.]
-f_min_list = [-80., -5., -10., 0.]
+feature_list = ['BTD_6211', 'BTD_1112', 'BTD_8711', 'RATIO_0616', 'BTD_3911']
+f_max_list = [ 10., 10., 10., 1., 70.]
+f_min_list = [-80., -5., -10., 0., -25.]
 
 DROP_VARIABLES = [
     "IR_108",
@@ -107,7 +107,7 @@ def read_daily_ncdf_msg_channel(path_files, date, channel):
     
     # get all elements of DROP_VARIABLES not in list_to_read
     l3 = [x for x in DROP_VARIABLES if x not in list_to_read]
-    
+
     # read daily file
     data = xr.open_dataset(path_files+'/'+yy+'/'+mm+'/'+date+'_MSG_SEVIRI_EXPATS.nc', drop_variables=l3)
     
