@@ -8,23 +8,34 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 from datetime import datetime
 import matplotlib.cm as cm
 import matplotlib.colors as colors
+import sys
+
+#methods for regridding
+sys.path.append('/home/dcorradi/Documents/Codes/MSG-SEVIRI/process/')
+from regrid_functions import generate_regular_grid, regrid_data, fill_missing_data_with_interpolation
 
 # Define the file path 
-path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
-path_to_cth = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/" 
+#path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
+path_to_file = "/work/case_studies_expats/Germany_Flood_2021/data/MSG/MSGNATIVE/"
+#path_to_cth = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/" 
+path_to_cth = "/work/case_studies_expats/Germany_Flood_2021/data/cloud_products/CTH_NWCSAF/NWC_SAF/"
 
 # MSG file  
 natfile = path_to_file+"MSG4-SEVI-MSG15-0100-NA-20210714122743.591000000Z-NA.subset.nat"
 
 # CTH file 
-cth_file = path_to_cth+"NWC_SAF/S_NWC_CTTH_MSG4_FLOOD-GER-2021-VISIR_20210714T121500Z.nc"
+cth_file = path_to_cth+"S_NWC_CTTH_MSG4_FLOOD-GER-2021-VISIR_20210714T121500Z.nc"
 #cth_file = path_to_cth+"CM_SAF/CTXin20210714120000405SVMSGI1UD.nc"
 
 # Fig Path
-path_to_fig = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/Fig/Parallax_Correction/"
+#path_to_fig = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/Fig/Parallax_Correction/"
+path_to_fig = "/work/case_studies_expats/Germany_Flood_2021/Fig/"
 
 # Define Domain
 domain = lonmin, latmin, lonmax, latmax= 5, 48, 9, 52 #2021 Germany Flood Area
+
+#Flag for regridding
+regrid = True
 
 # Define Time
 date_time_str = cth_file.split('.')[0].split('_')[-1]
@@ -87,6 +98,23 @@ for i,ch in enumerate(channels):
     print('sat lon data parallax',np.shape(sat_lon_crop_par), sat_lon_crop_par)
     print('sat lat data parallax',np.shape(sat_lat_crop_par), sat_lat_crop_par)
 
+    if regrid:
+        #fill missing values with interpolation
+        sat_data_crop_par = fill_missing_data_with_interpolation(sat_lat_crop_par, sat_lon_crop_par, sat_data_crop_parallax)
+        
+        #find regular lat lon points
+        lat_arr,  lon_arr = generate_regular_grid(latmin,latmax,lonmin,lonmax,0.03,path_to_file)
+        print(lat_arr,lon_arr)
+    
+        # Generate grid points
+        sat_lat_crop_reg, sat_lon_crop_reg = np.meshgrid(lat_arr, lon_arr, indexing='ij')
+        print('sat lon data reg grid',np.shape(sat_lon_crop_par), sat_lon_crop_par)
+        print('sat lat data reg grid',np.shape(sat_lat_crop_par), sat_lat_crop_par)        
+
+        #regrid
+        sat_data_crop_parallax = regrid_data(sat_lat_crop_par, sat_lon_crop_par, sat_data_crop_par, sat_lat_crop_reg, sat_lon_crop_reg)
+        print('sat data reg grid',np.shape(sat_data_crop_parallax),sat_data_crop_parallax)
+
     #plot sat data with and without parallax correction
     #TODO include also the CTH in the background
 
@@ -96,7 +124,7 @@ for i,ch in enumerate(channels):
     if channels_unit[i]=='Brightness Temperature (K)':
         cmap = 'cool'
     elif channels_unit[i]=='Reflectances (%)':
-        cmap = 'gray_r'
+        cmap = 'gray'
 
     sat_min = np.amin(sat_data_crop)
     sat_max = np.amax(sat_data_crop)
@@ -109,8 +137,12 @@ for i,ch in enumerate(channels):
     # Plot
     axs[0].contourf(sat_lon_crop, sat_lat_crop, sat_data_crop, transform=ccrs.PlateCarree(), norm=norm, cmap=cmap)
     axs[0].set_title('No Parallax Correction')
-    axs[1].contourf(sat_lon_crop_par, sat_lat_crop_par, sat_data_crop_parallax, transform=ccrs.PlateCarree(), norm=norm, cmap=cmap)
-    axs[1].set_title('With Parallax Correction')
+    if regrid:
+        axs[1].contourf(sat_lon_crop_reg, sat_lat_crop_reg, sat_data_crop_parallax, transform=ccrs.PlateCarree(), norm=norm, cmap=cmap)
+        axs[1].set_title('With Parallax Correction and regrid')
+    else:
+        axs[1].contourf(sat_lon_crop_par, sat_lat_crop_par, sat_data_crop_parallax, transform=ccrs.PlateCarree(), norm=norm, cmap=cmap)
+        axs[1].set_title('With Parallax Correction')
 
     # Add color bar
     fig.colorbar(sm, ax=axs, orientation='vertical', label=channels_unit[i], shrink=0.6, pad=0.02)
@@ -139,5 +171,8 @@ for i,ch in enumerate(channels):
 
     #plt.show()
     # Uncomment the line below to save the figure
-    fig.savefig(path_to_fig+'par_corr_maps_'+ch+'_'+date_time_str+'.png', bbox_inches='tight')
+    if regrid:
+       fig.savefig(path_to_fig+'par_corr_regrid_maps_'+ch+'_'+date_time_str+'.png', bbox_inches='tight')
+    else:
+        fig.savefig(path_to_fig+'par_corr_maps_'+ch+'_'+date_time_str+'.png', bbox_inches='tight')
     plt.close()

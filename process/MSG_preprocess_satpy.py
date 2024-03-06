@@ -19,9 +19,9 @@ import numpy as np
 # Start time
 begin_time = time.time()
 
-#Import parameters from config file
+#Import parameters from config file and custom methods
 from config_satpy_process import path_to_file, path_to_cth, natfile, cth_file
-from config_satpy_process import lonmin, lonmax, latmax, latmin, channels, step_deg
+from config_satpy_process import lonmin, lonmax, latmax, latmin, channels, step_deg, interp_method
 from config_satpy_process import parallax_correction, regular_grid
 from config_satpy_process import msg_reader, cth_reader
 from regrid_functions import regrid_data, fill_missing_data_with_interpolation, generate_regular_grid
@@ -43,7 +43,7 @@ if regular_grid:
 #Read data at different temporal steps
 for t,f in enumerate(fnames):
     # count over the loop
-    print(f'Processing file number {t+1}/{len(fnames)})')
+    print(f'Processing file number {t+1}/{len(fnames)}')
 
     #create empty Dataset
     ds = xr.Dataset()
@@ -62,15 +62,14 @@ for t,f in enumerate(fnames):
     
     # Define Scene to open file with Satpy
     scn = satpy.Scene(reader=msg_reader, filenames=[f]) #By default bad quality scan lines are masked and replaced with np.nan based on the quality flags provided by the data 
-    ch = channels[0]
 
     if parallax_correction:
         scn = satpy.Scene({msg_reader: [f], cth_reader: [cth_fnames[t]]})
-        ch = 'parallax_corrected_'+ch
-    
     
     #TODO channels loop can be parallelized as the order is not important, use dask or multiporcessing 
-    for ch_idx,ch in enumerate(channels):
+    for ch_idx in range(len(channels)):
+        if parallax_correction:
+            ch = 'parallax_corrected_'+channels[ch_idx]
         #Load one channel
         scn.load([ch]) 
 
@@ -100,26 +99,26 @@ for t,f in enumerate(fnames):
         sat_data_crop = crop_scn[ch].values #R/Tb
         #print('sat data',sat_data_crop)
 
-        if parallax_correction:
+        if regular_grid:
             #interpolate the missing points (NaN)
             sat_data_crop = fill_missing_data_with_interpolation(sat_lat_crop, sat_lon_crop, sat_data_crop)
-
-        if regular_grid:
+            
             #regrid the sat data to a regular grid
-            sat_data_crop = regrid_data(sat_lat_crop, sat_lon_crop, sat_data_crop, lat_reg_grid, lon_reg_grid)
+            sat_data_crop = regrid_data(sat_lat_crop, sat_lon_crop, sat_data_crop, lat_reg_grid, lon_reg_grid, interp_method) 
             
             #add channel values to the Dataarray
             sat_da = xr.DataArray(
             sat_data_crop,
             dims=("y", "x"),
             coords={"lat": ("y", lat_arr), "lon": ("x", lon_arr)},
-            name=str(ch)
+            name=str(channels[ch_idx])
             )
+
         else:        
-            sat_da = xr.DataArray(sat_data_crop, dims=("y", "x"), name=str(ch))
+            sat_da = xr.DataArray(sat_data_crop, dims=("y", "x"), name=str(channels[ch_idx]))
         
         #add channel values to the Dataset
-        ds[str(ch)] = sat_da
+        ds[str(channels[ch_idx])] = sat_da
 
     # Add a new dimension for the start time coordinate
     ds = ds.expand_dims('end_time', axis=0)
