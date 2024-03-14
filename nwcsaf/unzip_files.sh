@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Specify the directory containing the zip files
-zip_files_dir='/work/NWC_GEO/import/Sat_data/'
+zip_files_dir='/work/MSG/HRIT/2023/07/'
 
 # Specify the directory where you want to extract the contents
 output_dir='/work/NWC_GEO/import/Sat_data/'
 
 # Configure whether to delete the zip files after extraction (true or false)
-delete_zip_after_extraction=false
+delete_zip_after_extraction=true
 
 # Navigate to the directory containing the zip files
 cd "$zip_files_dir"
