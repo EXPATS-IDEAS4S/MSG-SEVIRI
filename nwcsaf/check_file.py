@@ -13,7 +13,7 @@ file_counts = defaultdict(int)
 for filename in os.listdir(directory):
     # Assuming the date is always at a specific position in the filename
     # Adjust the slicing according to your filename format
-    if filename.startswith('H-000-MSG3'):
+    if filename.startswith('H-000-MSG'):
         date = filename.split('-')[-2]  # Extracting date part 
         file_counts[date] += 1
 

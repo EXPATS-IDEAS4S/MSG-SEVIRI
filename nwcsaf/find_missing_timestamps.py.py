@@ -34,7 +34,14 @@ if __name__ == "__main__":
     end_date = datetime.strptime(sys.argv[2], '%Y-%m-%d')
     directory = sys.argv[3]
     missing_timestamps = list_missing_timestamps(start_date, end_date, directory)
-    for timestamp in missing_timestamps:
-        print(timestamp.strftime('%Y%m%d%H%M'))
+    # Open the output file for writing
+    output_file = directory+"missing_files.txt"
+    with open(output_file, 'w') as f:
+        for timestamp in missing_timestamps:
+            print(timestamp.strftime('%Y%m%d%H%M'))
+            f.write(timestamp.strftime('%Y%m%d%H%M')+"\n")            
+
+    print(f"Output written to {output_file}")
+
 
 
