@@ -4,13 +4,12 @@ Filename, directories,
 from glob import glob
 
 # Define the file path where nat files are downloaded
-path_to_file = "/data/sat/msg/test/" 
+path_to_file = "/data/sat/msg/nat/" 
 
 # path for dir tree ncdf files
 path_dir_tree = "/data/sat/msg/"
 
 # define filename list of nat files for 
-nat_fnames = sorted(glob(path_to_file+"*NA.subset.nat"))
 
 
 # define NWC SAF product file folder (for convective index and cloud top height)
