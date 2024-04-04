@@ -9,9 +9,11 @@ def is_file_present(filename, download_dir, format):
     # example of name file before costumization: 
     # MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA 
     time_str = filename.split('.')[0].split('-')[-1]    
-
+    print(time_str)
+    
     # List all files in the download directory
     existing_files = os.listdir(download_dir)
+    print('existing files:', len(existing_files))
     
     if format == 'hrit' or format == 'hrit_compressed':
         # hrit filenames: H-000-MSG4__-MSG4________-WV_073___-000003___-202107141200-__
@@ -34,7 +36,7 @@ def is_file_present(filename, download_dir, format):
         # Check if a file for this time period already exists
         for file in existing_files:
             # filename after costumization depends on the format:
-            if format == 'msgnative':
+            if format == 'msgnative':   
                 #nat filenames example: MSG3-SEVI-MSG15-0100-NA-20230731215741.559000000Z-NA.subset.nat
                 time_str_cust = file.split('.')[0].split('-')
             elif format == 'netcdf4':

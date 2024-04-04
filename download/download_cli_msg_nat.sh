@@ -1,19 +1,24 @@
 #!/bin/bash
 
 : '
-Usage: download_script.sh [START_TIME] [END_TIME] [DOWNLOAD_DIR]
+Usage: to be run from /Documents/Github/EXPATS/MSG-SEVIRI/
+command: bash download/download_cli.sh [START_TIME] [END_TIME] [DOWNLOAD_DIR]
 
-This script downloads satellite data for a specified time range using the EUMETSAT Data Access API. The start time, end time, and download directory are optional command-line arguments. If not provided, default values are used:
+This script downloads satellite data for a specified time range using the EUMETSAT Data Access API.
+The start time, end time, and download directory are optional command-line arguments. 
+If not provided, default values are used:
 - START_TIME: Optional. The start time for the data retrieval, formatted as "YYYY-MM-DDTHH:MM".
 - END_TIME: Optional. The end time for the data retrieval, formatted as "YYYY-MM-DDTHH:MM". 
 - DOWNLOAD_DIR: Optional. The directory where the downloaded files will be saved. 
 
-Before downloading, the script fetches necessary credentials using a separate Python script (credentials.py) and sets them for the current session.
+Before downloading, the script fetches necessary credentials using a separate Python script (credentials.py) 
+and sets them for the current session.
 
 Parameters:
 - PRODUCT: Specifies the satellite product to download.
 - FORMAT: Defines the format of the downloaded data. Supported formats include 'hrit', 'msgnative', and 'netcdf4'.
-- ROI (Region of Interest): Optional parameter to specify the geographic bounding box for the data, formatted as [North, South, West, East] coordinates.
+- ROI (Region of Interest): Optional parameter to specify the geographic bounding box for the data, formatted as 
+[North, South, West, East] coordinates.
 
 The script sets the credentials for data access and then proceeds with the data download process for the specified product, time range, format, and saves the downloaded files to the specified or default download directory.
 
@@ -27,9 +32,10 @@ Examples:
 Note: Ensure that the credentials.py script is present in the same directory as this script and that it outputs the consumer key and secret as space-separated values.
 '
 
+
 # Default values for START_TIME, END_TIME, and DOWNLOAD_DIR
-default_start_time="2023-06-01T02:00"
-default_end_time="2023-06-10T00:00"
+default_start_time="2023-06-02T00:00"
+default_end_time="2023-06-02T02:00"
 default_download_dir="/data/sat/msg/nat/2023/06/"
 
 # Use command-line arguments if provided, otherwise use default values
@@ -71,7 +77,7 @@ batch_size=10
 LOG_FILE=${DOWNLOAD_DIR}"logfile.txt"
 
 # Path to the Python script
-python_script_path="download/check_file_precence.py"
+python_script_path="download/check_file_presence.py"
 
 #remove entire order history
 eumdac order delete --all
@@ -81,17 +87,17 @@ eumdac tailor clean --all
 
 # Create a list of products to download
 #eumdac search -c $PRODUCT --start $START_TIME --end $END_TIME --bbox 5 48 9 52 --limit 3 > products.txt
-eumdac search -c $PRODUCT --start $START_TIME --end $END_TIME  > products.txt
+eumdac search -c $PRODUCT --start $START_TIME --end $END_TIME  > /net/ostro/msg_download_info_files/products.txt
 #The search and browse APIs are limited to return a maximum of 10.000 items.
 #if you first do the order and then download it seems not able to perfrom multiple file at time (only using download directy)
 #check customization using yaml files
 #When using a bounding box geometry for filter products, the values needs to be in WSEN order(west, south, east, north).
 
 # Print the number of lines before checking
-echo "Number of lines before checking: $(wc -l < products.txt)"
+echo "Number of lines before checking: $(wc -l < /net/ostro/msg_download_info_files/products.txt)"
 
 # Temporary file to store products that don't exist
-touch temp_products.txt
+touch /net/ostro/msg_download_info_files/temp_products.txt
 
 # Read each line in products.txt
 while IFS= read -r line; do
@@ -101,29 +107,29 @@ while IFS= read -r line; do
     
     # check using grep
     if echo "$result" | grep -q "does not exist"; then
-        echo "$line" >> temp_products.txt
+        echo "$line" >> /net/ostro/msg_download_info_files/temp_products.txt
     fi
-done < "products.txt"
+done < "/net/ostro/msg_download_info_files/products.txt"
 
 # Replace the original products.txt with the temp file containing only products that don't exist
-mv "temp_products.txt" "products.txt"
+mv "/net/ostro/msg_download_info_files/temp_products.txt" "/net/ostro/msg_download_info_files/products.txt"
 
 # Print the number of lines after checking
-echo "Number of lines after checking: $(wc -l < products.txt)"
+echo "Number of lines after checking: $(wc -l < /net/ostro/msg_download_info_files/products.txt)"
 
 # Check if the file exists and has a size greater than zero
-if [ -s "products.txt" ]; then
+if [ -s "/net/ostro/msg_download_info_files/products.txt" ]; then
     # File exists and has content, continue with the rest of the script
     echo "Files are available for download."
 
     # Count the total number of lines/files in products.txt
-    total_lines=$(wc -l <products.txt)
+    total_lines=$(wc -l < /net/ostro/msg_download_info_files/products.txt)
 
     # Calculate the number of batches needed
     num_batches=$(( (total_lines + batch_size - 1) / batch_size ))
 
     # Temporary file to store products that don't exist
-    touch temp_batch_files.txt
+    touch /net/ostro/msg_download_info_files/temp_batch_files.txt
 
     # Loop through each batch
     for (( batch=1; batch<=num_batches; batch++ ))
@@ -133,14 +139,16 @@ if [ -s "products.txt" ]; then
         end_line=$(( batch * batch_size ))
 
         # Extract the current batch of lines from products.txt and store in a temporary file
-        sed -n "${start_line},${end_line}p" products.txt > temp_batch_files.txt
+        sed -n "${start_line},${end_line}p" /net/ostro/msg_download_info_files/products.txt > /net/ostro/msg_download_info_files/temp_batch_files.txt
 
         # Process each file in the current batch
         echo "Processing batch $batch:"
         
         # Download the products without saving output to a log file
+        eumdac download -c $PRODUCT -p @temp_batch_files.txt --tailor 'product: HRSEVIRI, format: '$FORMAT', roi: {'NSWE':[52, 42, 5, 16]}' -o $DOWNLOAD_DIR -y
+
         #eumdac download -c $PRODUCT -p @temp_batch_files.txt --tailor 'product: HRSEVIRI, format: '$FORMAT', compression: zip' -o $DOWNLOAD_DIR -y 
-        eumdac download -c $PRODUCT --start $START_TIME --end $END_TIME --tailor 'product: HRSEVIRI, format: '$FORMAT', roi: {'NSWE':[52, 42, 5, 16]}' -o $DOWNLOAD_DIR -y
+        #eumdac download -c $PRODUCT --start $START_TIME --end $END_TIME --tailor 'product: HRSEVIRI, format: '$FORMAT', roi: {'NSWE':[52, 42, 5, 16]}' -o $DOWNLOAD_DIR -y
         #eumdac download -c $PRODUCT --start $START_TIME --end $END_TIME --tailor 'product: HRSEVIRI, projection: geographic, format: netcdf4, roi: {'NSWE': [52, 48, 5, 9]}' -o $DOWNLOAD_DIR 
         #eumdac download -c $PRODUCT --start $START_TIME --end $END_TIME --bbox 5 48 9 52 -o $DOWNLOAD_DIR 
         #bbox only select the data containing that area? crop should be done inside --tailor? or the problem was only this polar orbit satellite? check
@@ -158,7 +166,7 @@ if [ -s "products.txt" ]; then
     done
 
     # Clean up the temporary file after all batches are processed
-    rm temp_batch_files.txt
+    rm /net/ostro/msg_download_info_files/temp_batch_files.txt
 
 else
     # File is empty or does not exist, print message and exit
