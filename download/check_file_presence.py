@@ -8,7 +8,10 @@ def is_file_present(filename, download_dir, format):
     # Get the time string from the filenames after 'search' command 
     # example of name file before costumization: 
     # MSG4-SEVI-MSG15-0100-NA-20210714121243.449000000Z-NA 
-    time_str = filename.split('.')[0].split('-')[-1]    
+    time_str = filename.split('.')[0].split('-')[-1]   
+
+    if not os.path.exists(download_dir):
+        return False
 
     # List all files in the download directory
     existing_files = os.listdir(download_dir)
