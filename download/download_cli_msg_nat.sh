@@ -34,9 +34,9 @@ Note: Ensure that the credentials.py script is present in the same directory as 
 
 
 # Default values for START_TIME, END_TIME, and DOWNLOAD_DIR
-default_start_time="2023-06-02T00:00"
-default_end_time="2023-06-02T02:00"
-default_download_dir="/data/sat/msg/nat/2023/06/"
+default_start_time="2023-08-01T00:00"
+default_end_time="2023-08-02T00:00"
+default_download_dir="/data/sat/msg/nat/incoming/"
 
 # Use command-line arguments if provided, otherwise use default values
 START_TIME="${1:-$default_start_time}"
@@ -65,8 +65,8 @@ ConsumerSecret=$(echo $ConsumerSecret | tr -d '\n')
 eumdac set-credentials $ConsumerKey $ConsumerSecret
 
 # Define time range and product details
-#PRODUCT="EO:EUM:DAT:MSG:HRSEVIRI" # standard msg files (15 mins res)
-PRODUCT="EO:EUM:DAT:MSG:MSG15-RSS" # high rate scans
+PRODUCT="EO:EUM:DAT:MSG:HRSEVIRI" # standard msg files (15 mins res)
+#PRODUCT="EO:EUM:DAT:MSG:MSG15-RSS" # high rate scans
 FORMAT='msgnative' # 'hrit','netcdf4'
 #ROI=[52, 42, 5, 16] #NSWE --> expats
 
@@ -84,6 +84,7 @@ eumdac order delete --all
 
 #clean all old customization to free up memory
 eumdac tailor clean --all
+
 
 # Create a list of products to download
 #eumdac search -c $PRODUCT --start $START_TIME --end $END_TIME --bbox 5 48 9 52 --limit 3 > products.txt
@@ -185,3 +186,6 @@ elapsed_time=$((script_end_time - script_start_time))
 echo "Elapsed Time: $elapsed_time seconds" >> "$LOG_FILE"
 
 echo "Download concluded!"
+
+
+
