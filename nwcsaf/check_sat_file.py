@@ -2,8 +2,8 @@ import os
 from collections import defaultdict
 
 # Specify the directory to check
-directory = '/work/NWC_GEO/import/Sat_data/'
-output_file = '/work/NWC_GEO/import/Sat_data/output.txt'
+directory = '/work/dcorradi/NWC_GEO/import/Sat_data'
+output_file = '/work/dcorradi/case_studies_expats/Hailstorm_July_2023/data/NWCSAF/CI/hrit_avail_list.txt'
 
 # A dictionary to hold counts of files for each timestamp-channel combination
 file_counts = defaultdict(int)

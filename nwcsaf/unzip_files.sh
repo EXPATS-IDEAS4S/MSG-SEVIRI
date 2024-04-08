@@ -39,25 +39,23 @@ Note:
 '
 
 # Check for command-line arguments and use them if provided; otherwise, use default values
-zip_files_dir="${1:-'/work/MSG/HRIT/2023/07/'}" # Default zip files directory
+zip_files_dir="${1:-'/net/norte/pbigalke/msg/test/2023/07/'}" # Default zip files directory
 output_dir="${2:-'/work/NWC_GEO/import/Sat_data/'}" # Default output directory
 
 # Configure whether to delete the zip files after extraction (true or false)
-delete_zip_after_extraction=true
+delete_zip_after_extraction=false
 
-# Navigate to the directory containing the zip files
-if cd "$zip_files_dir"; then
-    # Loop through each zip file matching the pattern and extract it to the output directory
-    for file in EPCT_HRSEVIRI_*.zip; do
-        unzip -o "$file" -d "$output_dir"
-        
-        # Check if delete_zip_after_extraction is set to true
-        if [ "$delete_zip_after_extraction" = true ]; then
-            echo "Deleting zip file: $file"
-            rm "$file"
-        fi
-    done
-else
-    echo "The specified zip files directory does not exist: $zip_files_dir"
-    exit 1
-fi
+# Ensure the output directory exists
+#mkdir -p "$output_dir"
+
+# Use the find command to locate all zip files in the directory and its subdirectories
+find "$zip_files_dir" -type f -name 'EPCT_HRSEVIRI_*.zip' -print0 | while IFS= read -r -d $'\0' file; do
+    echo "Extracting zip file: $file"
+    unzip -o "$file" -d "$output_dir"
+    
+    # Check if delete_zip_after_extraction is set to true
+    if [ "$delete_zip_after_extraction" = true ]; then
+        echo "Deleting zip file: $file"
+        rm "$file"
+    fi
+done
