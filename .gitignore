@@ -18,3 +18,6 @@ products.txt
 
 #batch file during downloading
 temp_batch_files.txt
+
+#list of missing timestamps
+missing_timestamps.txt
