@@ -23,6 +23,7 @@ Output:
 
 import os
 import sys
+import glob
 from datetime import datetime, timedelta
 from collections import defaultdict
 
@@ -88,14 +89,26 @@ def find_date_string(filename, file_format):
         return None
     
 
+def get_all_files_in_directory(directory, file_format):
+    """
+    """
+    #TODO: add for extension of other formats
+    # For 'msgnative' format
+    if file_format == 'msgnative':
+        return glob.glob(f'{directory}/**/*.nat', recursive=True)
+    
+
 def list_missing_timestamps(start_date, end_date, directory, format, expected_files_per_interval=1):
     # Generate all 15-minute timestamps between start_date and end_date
     all_timestamps = list(generate_timestamps(start_date, end_date))
     #print(all_timestamps)
 
+    # read in all filenames in directory (and subdirectories)
+    files = get_all_files_in_directory(directory, format)
+
     # Count files for each timestamp
     file_counts = defaultdict(int)
-    for f in os.listdir(directory):
+    for f in files:
         # Parse timestamp from filename
         try:
             datestring = find_date_string(f,format)
