@@ -3,8 +3,8 @@ import netCDF4 as nc
 # Path to your NetCDF file
 #path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
 #nc_file = 'CTXin20210712000000405SVMSGI1UD.nc'
-path_to_files = "/net/ostro/figs_proposal_TEAMX/"
-nc_file = "orography_expats_high_res.nc"
+path_to_files = "/work/dcorradi/case_studies_expats/Hailstorm_July_2023/data/NWCSAF/CI/"
+nc_file = "S_NWC_CI_MSG3_EXPATS-VISIR_20230710T140000Z.nc"
 
 # Open the NetCDF file
 dataset = nc.Dataset(path_to_files+nc_file, 'r')  # 'r' is for read mode

@@ -36,9 +36,9 @@ script_start_time=$(date +%s)
 #####CONFIG PARAMETERS
 
 # Default values for START_TIME, END_TIME, and DOWNLOAD_DIR
-default_start_time="2023-09-01T00:00"
-default_end_time="2023-09-03T00:00"
-default_download_dir="/data/sat/msg/nat/2023/09/"
+default_start_time="2022-07-01T00:00"
+default_end_time="2022-08-01T00:00"
+default_download_dir="/data/sat/msg/nat/2022/07/"
 
 # Use command-line arguments if provided, otherwise use default values
 START_TIME="${1:-$default_start_time}"
@@ -92,6 +92,9 @@ eumdac order delete --all
 
 #clean all old customization to free up memory
 eumdac tailor clean --all
+
+#create prodict txt file
+rm ${LOG_DIR}products.txt
 
 # Create a list of products to download
 #eumdac search -c $PRODUCT --start $START_TIME --end $END_TIME --bbox 5 48 9 52 --limit 3 > products.txt

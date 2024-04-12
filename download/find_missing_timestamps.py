@@ -27,9 +27,9 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 # Default parameters
-DEFAULT_START_DATE = '2023-09-01'
-DEFAULT_END_DATE = '2023-09-04'
-directory = '/data/sat/msg/nat/2023/09'
+DEFAULT_START_DATE = '2022-08-01'
+DEFAULT_END_DATE = '2022-09-01'
+directory = '/data/sat/msg/nat/2022/08'
 log_dir = '/home/dcorradi/Documents/Codes/MSG-SEVIRI/download/log' 
 format = 'msgnative' 
 
