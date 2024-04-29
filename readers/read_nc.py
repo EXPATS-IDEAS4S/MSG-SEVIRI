@@ -1,10 +1,16 @@
 import netCDF4 as nc
+import xarray as xr
 
 # Path to your NetCDF file
 #path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
 #nc_file = 'CTXin20210712000000405SVMSGI1UD.nc'
-path_to_files = "/work/dcorradi/case_studies_expats/Hailstorm_July_2023/data/NWCSAF/CI/"
-nc_file = "S_NWC_CI_MSG3_EXPATS-VISIR_20230710T140000Z.nc"
+path_to_files = "/data/sat/msg/radar/nimrod/netcdf/2023/04/"
+nc_file = "nimrod_rain_data_eu_20230401_0000.nc"
+
+
+ds = xr.open_dataset(path_to_files+nc_file)
+
+print(ds)
 
 # Open the NetCDF file
 dataset = nc.Dataset(path_to_files+nc_file, 'r')  # 'r' is for read mode
@@ -23,6 +29,8 @@ for dim in dataset.dimensions.values():
 print("\nVariables:")
 for var in dataset.variables:
     print(f"{var}: {dataset.variables[var]}")
+
+
 
 """
 # Example of reading data from a variable

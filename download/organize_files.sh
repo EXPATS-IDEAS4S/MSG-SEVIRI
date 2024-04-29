@@ -29,7 +29,8 @@ folder_path=$1
 cd "$folder_path" || exit
 
 # Loop through files matching the specific structure
-for file in MSG*-SEVI-MSG15-0100-NA-*.subset.nat; do
+#for file in MSG*-SEVI-MSG15-0100-NA-*.subset.nat; do
+for file in MSG*; do
     # Extract the date string from the filename
     date_str=$(echo "$file" | grep -oP '\d{14}')
 
