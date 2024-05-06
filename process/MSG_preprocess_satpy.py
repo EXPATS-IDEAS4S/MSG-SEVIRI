@@ -26,9 +26,18 @@ from config_satpy_process import parallax_correction, regular_grid
 from config_satpy_process import msg_reader, cth_reader
 from regrid_functions import regrid_data, fill_missing_data_with_interpolation, generate_regular_grid
 
+year = '2023'
+month = '07'
+
+path_to_save = "/data/sat/msg/netcdf/"
+
+# Construct the path pattern to include subdirectories for days
+path_pattern = f"{path_to_file}{year}/{month}/*/{natfile}"
+print(path_pattern)
+
 #open all MSG files in directory 
-fnames = sorted(glob(path_to_file+natfile))
-#print(fnames)
+fnames = sorted(glob(path_pattern))
+print(fnames)
 
 #open all CTH files in directoy
 cth_fnames = sorted(glob(path_to_cth+cth_file))
@@ -50,14 +59,16 @@ for t,f in enumerate(fnames):
 
     #get start and end time from filename format yyyymmddhhmmss
     end_scan_time = f.split('/')[-1].split('-')[5].split('.')[0]
-    #min_str = end_scan_time[10:12]
+    #print(end_scan_time)
+    min_str = end_scan_time[10:12]
+    #print(min_str)
     #switch the minutes that indicate the end the scan to the minutes that indicate the 'rounded' start of the scan
-    #if '00'<min_str<'15': min_str='00'
-    #if '15'<min_str<'30': min_str='15' 
-    #if '30'<min_str<'45': min_str='30'
-    #if '45'<min_str<'59': min_str='45'
-    #time_str = end_scan_time[0:10]+min_str
-    time_str = datetime.datetime.strptime(end_scan_time, "%Y%m%d%H%M%S")
+    if '00'<min_str<'15': min_str='00'
+    if '15'<min_str<'30': min_str='15' 
+    if '30'<min_str<'45': min_str='30'
+    if '45'<min_str<'59': min_str='45'
+    time_str = end_scan_time[0:10]+min_str
+    time_str = datetime.datetime.strptime(time_str, "%Y%m%d%H%M%S")
     print(time_str)
     
     # Define Scene to open file with Satpy
@@ -66,8 +77,9 @@ for t,f in enumerate(fnames):
     if parallax_correction:
         scn = satpy.Scene({msg_reader: [f], cth_reader: [cth_fnames[t]]})
     
-    #TODO channels loop can be parallelized as the order is not important, use dask or multiporcessing 
+    # loop over the channels 
     for ch_idx in range(len(channels)):
+        ch = channels[ch_idx]
         if parallax_correction:
             ch = 'parallax_corrected_'+channels[ch_idx]
         #Load one channel
@@ -86,8 +98,8 @@ for t,f in enumerate(fnames):
 
             if not regular_grid:
                 # create DataArrays with the coordinates using cloud mask grid
-                lon_da = xr.DataArray(sat_lon_crop, dims=("y", "x"), name="lon_grid")
-                lat_da = xr.DataArray(sat_lat_crop, dims=("y", "x"), name="lat_grid")
+                lon_da = xr.DataArray(sat_lon_crop.astype(np.float32), dims=("y", "x"), name="lon_grid")
+                lat_da = xr.DataArray(sat_lat_crop.astype(np.float32), dims=("y", "x"), name="lat_grid")
 
                 # combine DataArrays into xarray object
                 #ds = xr.Dataset({"lon_grid": lon_da, "lat_grid": lat_da})
@@ -108,9 +120,9 @@ for t,f in enumerate(fnames):
             
             #add channel values to the Dataarray
             sat_da = xr.DataArray(
-            sat_data_crop,
+            sat_data_crop.astype(np.float32),
             dims=("y", "x"),
-            coords={"lat": ("y", lat_arr), "lon": ("x", lon_arr)},
+            coords={"lat": ("y", lat_arr.astype(np.float32)), "lon": ("x", lon_arr.astype(np.float32))},
             name=str(channels[ch_idx])
             )
 
@@ -121,13 +133,13 @@ for t,f in enumerate(fnames):
         ds[str(channels[ch_idx])] = sat_da
 
     # Add a new dimension for the start time coordinate
-    ds = ds.expand_dims('end_time', axis=0)
-    ds['end_time'] = [time_str]
+    ds = ds.expand_dims('time', axis=0)
+    ds['time'] = [time_str]
 
     # Set the directory path to save files
-    proj_file_path = path_to_file+'Processed/'
+    proj_file_path = path_to_save+'noparallax/'+year+'/'+month+'/'
     if parallax_correction:
-        proj_file_path = path_to_file+'Parallax_Corrected/'
+        proj_file_path = path_to_save+'parallax/'+year+'/'+month+'/'
 
     # Check if the directory exists
     if not os.path.exists(proj_file_path):
@@ -140,10 +152,26 @@ for t,f in enumerate(fnames):
         filename_save = f.split('/')[-1].split('.')[0]+'_regular_grid.nc'
 
     #save the features using a similar name of the HDF5 file but in netCDF format
-    ds.to_netcdf(proj_file_path+filename_save)
+    #ds.to_netcdf(proj_file_path+filename_save)
+    ds.to_netcdf(proj_file_path+filename_save, \
+        encoding={'IR_016':{"zlib":True, "complevel":9},\
+                'IR_039':{"zlib":True, "complevel":9},\
+                'IR_087':{"zlib":True, "complevel":9},\
+                'IR_097':{"zlib":True, "complevel":9},\
+                'IR_108':{"zlib":True, "complevel":9},\
+                'IR_120':{"zlib":True, "complevel":9},\
+                'IR_134':{"zlib":True, "complevel":9},\
+                'VIS006':{"zlib":True, "complevel":9},\
+                'VIS008':{"zlib":True, "complevel":9},\
+                'WV_062':{"zlib":True, "complevel":9},\
+                'WV_073':{"zlib":True, "complevel":9},\
+                'time':{"units": "seconds since 2000-01-01", "dtype": "i4"}})
     print('product saved\n')
     
     #print(ds)
+    #exit()
+
+print('Processing concluded!')
 
 # End time
 end_time = time.time()
@@ -151,26 +179,8 @@ end_time = time.time()
 # Calculate elapsed time
 elapsed_time = end_time - begin_time
 # Path to the text file where you want to save the elapsed time
-output_file_path = path_to_file+'elapsed_time_satpy.txt'
+output_file_path = '/home/dcorradi/Documents/Codes/MSG-SEVIRI/process/log/elapsed_time_satpy.txt'
 
 # Write elapsed time to the file
 with open(output_file_path, 'w') as file:
     print(f"Elapsed time: {elapsed_time} seconds", file=file)
-
-
-
-# # storing ncdf data compressed mode: example!
-#     MRRdata.to_netcdf(path_out+dateReverse+‘_MRR_PRO_msm_eurec4a.nc’, encoding={“Z”:{“zlib”:True, “complevel”:9},\
-#                                                                                              “Ze”: {“dtype”: “f4", “zlib”: True, “complevel”:9}, \
-#                                                                                              “Zea”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “drop_size_distribution”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “liquid_water_content”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “Kurtosis”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “fall_speed”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “skewness”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “mean_mass_weigthed_raindrop_diameter”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “spectral_width”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “rain_rate”: {“zlib”: True, “complevel”:9}, \
-#                                                                                              “lat”: {“dtype”: “f4"} , \
-#                                                                                              “lon”: {“dtype”: “f4”}, \
-#                                                                                              “time”: {“units”: “seconds since 2020-01-01", “dtype”: “i4"}})

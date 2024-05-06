@@ -28,10 +28,10 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 # Default parameters
-DEFAULT_START_DATE = '2023-06-01'
-DEFAULT_END_DATE = '2023-07-01'
-directory = '/data/sat/msg/nat/2023/06'
-log_dir = '/home/pbigalke/Documents/Code/Repos/MSG-SEVIRI/download/log' 
+DEFAULT_START_DATE = '2020-05-01'
+DEFAULT_END_DATE = '2020-06-01'
+directory = '/data/sat/msg/nat/2020/05'
+log_dir = '/home/dcorradi/Documents/Codes/MSG-SEVIRI/download/log' 
 format = 'msgnative' 
 
 def generate_timestamps(start_date, end_date):

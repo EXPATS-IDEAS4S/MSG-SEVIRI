@@ -1,3 +1,28 @@
+"""
+This script scans a specified directory for satellite data files matching a given pattern, extracts
+timestamps from the filenames, converts them into datetime objects, and records these timestamps 
+in a designated output text file.
+
+The script performs the following steps:
+- Constructs a search pattern for the files based on a specified directory and filename pattern.
+- Searches and sorts files that match the pattern.
+- Parses timestamps from the filenames assuming a specific format.
+- Saves the parsed timestamps into an output file in a human-readable format.
+
+Usage:
+- Define the directory, file pattern, and output file path.
+- Ensure that the timestamp format in the filenames matches the expected format specified in the datetime.strptime call.
+
+Parameters:
+- `directory`: Path to the directory containing the files.
+- `file_pattern`: Glob pattern to match the files of interest.
+- `output_file`: File path to save the extracted timestamps.
+
+Output:
+- A text file with one timestamp per line, each representing the date and time data was recorded,
+ 
+"""
+
 import glob
 import os
 from datetime import datetime
