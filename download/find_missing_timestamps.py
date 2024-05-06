@@ -27,11 +27,15 @@ import glob
 from datetime import datetime, timedelta
 from collections import defaultdict
 
+# get path to this directory
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
+
 # Default parameters
-DEFAULT_START_DATE = '2020-05-01'
-DEFAULT_END_DATE = '2020-06-01'
-directory = '/data/sat/msg/nat/2020/05'
-log_dir = '/home/dcorradi/Documents/Codes/MSG-SEVIRI/download/log' 
+DEFAULT_START_DATE = '2019-09-01'
+DEFAULT_END_DATE = '2019-10-01'
+directory = '/data/sat/msg/nat/2019/09'
+log_dir = f'{dir_path}/log' 
 format = 'msgnative' 
 
 def generate_timestamps(start_date, end_date):

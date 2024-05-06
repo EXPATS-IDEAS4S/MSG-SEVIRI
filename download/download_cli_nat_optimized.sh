@@ -32,20 +32,25 @@ Note: Ensure that the credentials.py script is present in the same directory as 
 # Start time for the script execution, not to be confused with the data start time
 script_start_time=$(date +%s)
 
-
-#####CONFIG PARAMETERS
+#######################
+##### CONFIG PARAMETERS
 
 # Default values for START_TIME, END_TIME, and DOWNLOAD_DIR
-default_start_time="2019-09-01T00:00"
-default_end_time="2019-10-01T00:00"
-default_download_dir="/data/sat/msg/nat/2019/09/"
+default_start_time="2019-08-01T00:00"
+default_end_time="2019-09-01T00:00"
+default_download_dir="/data/sat/msg/nat/2019/08/"
+
+##### CONFIG PARAMETERS
+#######################
 
 # Use command-line arguments if provided, otherwise use default values
 START_TIME="${1:-$default_start_time}"
 END_TIME="${2:-$default_end_time}"
 DOWNLOAD_DIR="${3:-$default_download_dir}"
-SCRIPT_DIR="/home/pbigalke/Documents/Code/Repos/MSG-SEVIRI/download/"
-LOG_DIR="/home/pbigalke/Documents/Code/Repos/MSG-SEVIRI/download/log/"
+
+# Absolute path this script is in.
+SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/"
+LOG_DIR="${SCRIPT_DIR}log/"
 
 echo "Using START_TIME: $START_TIME"
 echo "Using END_TIME: $END_TIME"
