@@ -8,6 +8,9 @@ def timestamp_from_file(file, format):
     # filename after costumization depends on the format:
     if format == 'msgnative':
         #nat filenames example: MSG3-SEVI-MSG15-0100-NA-20230731215741.559000000Z-NA.subset.nat
+        print(file)
+        print(file.split('.')[0])
+        print(file.split('.')[0].split('-'))
         file_timestamp = file.split('.')[0].split('-')[5]
 
     elif format == 'netcdf4':
@@ -25,7 +28,8 @@ def get_existing_timestamps(download_dir, format):
         existing_files = glob.glob(f'{download_dir}/**/*.hrit', recursive=True)
     
     elif format == 'msgnative':
-        existing_files = glob.glob(f'{download_dir}/**/*.nat', recursive=True)
+        existing_files = glob.glob(f'{download_dir}/**/MSG*.nat', recursive=True)
+        existing_files = [f for f in existing_files if "tmp" not in f]
         
     elif format == 'netcdf4':
         existing_files = glob.glob(f'{download_dir}/**/*.nc', recursive=True)
@@ -68,7 +72,7 @@ def delete_existing_products(product_file, download_dir, format):
                 # write to file
                 prod_file.write(prod)
                 
-    print('products', len(products_to_download), products_to_download)
+    print('products', len(products_to_download))
 
 
 if __name__ == "__main__":
