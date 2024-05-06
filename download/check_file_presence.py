@@ -2,6 +2,22 @@
 import os
 import sys
 import logging
+import glob
+
+def get_existing_files(download_dir, format):
+    # List all files in the download directory and subdirectories
+    if format == 'hrit' or format == 'hrit_compressed':
+        return glob.glob(f'{download_dir}/**/*.hrit', recursive=True)
+    
+    elif format == 'msgnative':
+        # List all files in the download directory and subdirectories
+        return glob.glob(f'{download_dir}/**/*.nat', recursive=True)
+        
+    elif format == 'netcdf4':
+        # List all files in the download directory and subdirectories
+        return glob.glob(f'{download_dir}/**/*.nc', recursive=True)
+    else:
+        return False
 
 # function to check if the file is already present in the downloading directory
 def is_file_present(filename, download_dir, format):
@@ -12,10 +28,10 @@ def is_file_present(filename, download_dir, format):
 
     if not os.path.exists(download_dir):
         return False
-
-    # List all files in the download directory
-    existing_files = os.listdir(download_dir)
     
+    # read all existing files
+    existing_files = get_existing_files(download_dir, format)
+
     if format == 'hrit' or format == 'hrit_compressed':
         # hrit filenames: H-000-MSG4__-MSG4________-WV_073___-000003___-202107141200-__
         # for each time there is a file for each channel and divided in 8 files
@@ -34,16 +50,19 @@ def is_file_present(filename, download_dir, format):
             return True
         return False
     else:   
+
         # Check if a file for this time period already exists
         for file in existing_files:
             # filename after costumization depends on the format:
             if format == 'msgnative':
                 #nat filenames example: MSG3-SEVI-MSG15-0100-NA-20230731215741.559000000Z-NA.subset.nat
                 time_str_cust = file.split('.')[0].split('-')
+
             elif format == 'netcdf4':
                 #nc filename example: HRSEVIRI_20210715T101510Z_20210715T102742Z_epct_34b8524d_PC.nc
                 time_str = time_str = time_str[:8] + 'T' + time_str[8:] + 'Z' # Insert 'T' after the 8th character and 'Z' at the end
                 time_str_cust = file.split('.')[0].split('_')
+
             else:
                 logging.warning("format not recognized.")
             #check if the timestring is in the filename
