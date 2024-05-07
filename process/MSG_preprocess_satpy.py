@@ -27,7 +27,7 @@ from config_satpy_process import msg_reader, cth_reader
 from regrid_functions import regrid_data, fill_missing_data_with_interpolation, generate_regular_grid
 
 year = '2023'
-month = '07'
+month = '04'
 
 path_to_save = "/data/sat/msg/netcdf/"
 
@@ -37,10 +37,11 @@ print(path_pattern)
 
 #open all MSG files in directory 
 fnames = sorted(glob(path_pattern))
-print(fnames)
 
 #open all CTH files in directoy
-cth_fnames = sorted(glob(path_to_cth+cth_file))
+path_pattern_cth = f"{path_to_cth}{year}/{month}/*/{cth_file}"
+cth_fnames = sorted(glob(path_pattern_cth))
+#print(cth_fnames)
 
 #find a regular grid
 if regular_grid:
@@ -75,6 +76,14 @@ for t,f in enumerate(fnames):
     scn = satpy.Scene(reader=msg_reader, filenames=[f]) #By default bad quality scan lines are masked and replaced with np.nan based on the quality flags provided by the data 
 
     if parallax_correction:
+        if cth_reader == "cmsaf-claas3_l2_nc":
+            ds_cth_cmsaf = xr.open_dataset(cth_fnames[t])
+            ds_cth_cmsaf = ds_cth_cmsaf.rename({'cth': 'ctth_alti'})
+            ds_cth_cmsaf['ctth_alti'].attrs['satellite_nominal_latitude'] = ds_cth_cmsaf.subsatellite_lat.values[0]
+            ds_cth_cmsaf['ctth_alti'].attrs['satellite_nominal_longitude'] = ds_cth_cmsaf.subsatellite_lon.values[0]
+            ds_cth_cmsaf['ctth_alti'].attrs['satellite_nominal_altitude'] = ds_cth_cmsaf.subsatellite_alt.values[0]
+            ds_cth_cmsaf.to_netcdf(cth_fnames[t])
+            #ds_cth_cmsaf.close()
         scn = satpy.Scene({msg_reader: [f], cth_reader: [cth_fnames[t]]})
     
     # loop over the channels 
@@ -136,10 +145,16 @@ for t,f in enumerate(fnames):
     ds = ds.expand_dims('time', axis=0)
     ds['time'] = [time_str]
 
+    #extract day from time string
+    day = time_str.strftime("%d")
+    print(day)
+
+    exit()
+
     # Set the directory path to save files
-    proj_file_path = path_to_save+'noparallax/'+year+'/'+month+'/'
+    proj_file_path = path_to_save+'noparallax/'+year+'/'+month+'/'+day+'/'
     if parallax_correction:
-        proj_file_path = path_to_save+'parallax/'+year+'/'+month+'/'
+        proj_file_path = path_to_save+'parallax/'+year+'/'+month+'/'+day+'/'
 
     # Check if the directory exists
     if not os.path.exists(proj_file_path):

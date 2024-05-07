@@ -87,7 +87,7 @@ def fill_missing_data_with_interpolation(lat, lon, data, method='linear'):
 
 
 
-
+"""
 # Example usage
 from config_satpy_process import lonmin, latmin, lonmax, latmax
 step_deg = 0.03  # Define the step size in degrees
@@ -95,3 +95,5 @@ step_deg = 0.03  # Define the step size in degrees
 lat_grid, lon_grid = generate_regular_grid(latmin, latmax, lonmin, lonmax, step_deg)
 print("Regular grid points (lat, lon):")
 print(lat_grid, '\n', lon_grid)
+
+"""

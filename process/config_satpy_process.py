@@ -11,18 +11,18 @@ path_to_file = "/data/sat/msg/nat/"
 path_fig = "/work/case_studies_expats/Germany_Flood_2021/Fig/"
 
 #Path tp the Clout Top Height files
-path_to_cth = "/net/yube/case_studies_expats/Germany_Flood_2021/data/cloud_products/CTH_NWCSAF/NWC_SAF/" 
+#path_to_cth = "/net/yube/case_studies_expats/Germany_Flood_2021/data/cloud_products/CTH_NWCSAF/NWC_SAF/" 
+path_to_cth = "/data/sat/msg/CM_SAF/CTH/"
 
 #filepattern of the MSG files
 natfile = "MSG*-SEVI-MSG*-*-NA.subset.nat"
 
-
 #filepattern of the CTH files
-cth_file = "S_NWC_CTTH*.nc" #'CTXin*.nc'
+cth_file = 'CTXin*.nc' #"S_NWC_CTTH*.nc" 
 
 #Domain
 #lonmin, latmin, lonmax, latmax= 5, 48, 9, 52 #2021 Germany Flood Area
-lonmin, latmin, lonmax, latmax= 5, 42, 19, 51.5 #EXPATS
+lonmin, latmin, lonmax, latmax= 5, 42, 16, 51.5 #EXPATS
 
 #Define channel names
 channels = ['IR_016', 'IR_039', 'IR_087', 'IR_097', 'IR_108', 'IR_120', 'IR_134', 'VIS006', 'VIS008', 'WV_062', 'WV_073']
@@ -30,7 +30,7 @@ channels_unit = ['Reflectances (%)', 'Brightness Temperature (K)', 'Brightness T
 channels_cmaps = ['gray', 'cool', 'cool', 'cool', 'cool', 'cool', 'cool', 'gray', 'gray', 'cool', 'cool']
 
 # Flag to perform parallax correction
-parallax_correction = False
+parallax_correction = True
 
 # Flag for regular gridding
 regular_grid = True
@@ -39,4 +39,4 @@ interp_method = 'nearest'
 
 #Satpy reader for MSG data and cth
 msg_reader = 'seviri_l1b_native'
-cth_reader = "nwcsaf-geo" #"cmsaf-claas2_l2_nc"
+cth_reader = "cmsaf-claas3_l2_nc" #"nwcsaf-geo" 

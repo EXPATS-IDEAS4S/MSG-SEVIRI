@@ -16,34 +16,34 @@ from regrid_functions import generate_regular_grid, regrid_data, fill_missing_da
 
 # Define the file path 
 #path_to_file = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/MSG/HRSEVIRI_20220712_20210715_Flood_domain_DataTailor_nat/" 
-path_to_file = "/work/case_studies_expats/Germany_Flood_2021/data/MSG/MSGNATIVE/"
+path_to_file = "/data/sat/msg/nat/2023/04/01/"
 #path_to_cth = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/" 
-path_to_cth = "/work/case_studies_expats/Germany_Flood_2021/data/cloud_products/CTH_NWCSAF/NWC_SAF/"
+path_to_cth = "/data/sat/msg/CM_SAF/CTH_processed/"
 
 # MSG file  
-natfile = path_to_file+"MSG4-SEVI-MSG15-0100-NA-20210714122743.591000000Z-NA.subset.nat"
+natfile = path_to_file+"MSG3-SEVI-MSG15-0100-NA-20230401001241.842000000Z-NA.subset.nat"
 
 # CTH file 
-cth_file = path_to_cth+"S_NWC_CTTH_MSG4_FLOOD-GER-2021-VISIR_20210714T121500Z.nc"
+cth_file = path_to_cth+"CTXin20230401000000405SVMSGI1UD.nc"
 #cth_file = path_to_cth+"CM_SAF/CTXin20210714120000405SVMSGI1UD.nc"
 
 # Fig Path
 #path_to_fig = "/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/Fig/Parallax_Correction/"
-path_to_fig = "/work/case_studies_expats/Germany_Flood_2021/Fig/"
+path_to_fig = "/data/sat/msg/CM_SAF/CTH_processed/"
 
 # Define Domain
-domain = lonmin, latmin, lonmax, latmax= 5, 48, 9, 52 #2021 Germany Flood Area
+domain = lonmin, latmin, lonmax, latmax= 5, 42, 16, 52 #Expats
 
 #Flag for regridding
 regrid = True
 
 # Define Time
-date_time_str = cth_file.split('.')[0].split('_')[-1]
-#date_time_str = cth_file.split('.')[0].split('/')[-1][5:17]
+#date_time_str = cth_file.split('.')[0].split('_')[-1]
+date_time_str = cth_file.split('.')[0].split('/')[-1][5:17]
 
 # Convert the string to a datetime object
-#date_time_obj = datetime.strptime(date_time_str, '%Y%m%d%H%M%S')
-date_time_obj = datetime.strptime(date_time_str, '%Y%m%dT%H%M%SZ')
+date_time_obj = datetime.strptime(date_time_str, '%Y%m%d%H%M%S')
+#date_time_obj = datetime.strptime(date_time_str, '%Y%m%dT%H%M%SZ')
 
 # Format the datetime object into a more readable string. For example, "July 12, 2021, 00:00"
 readable_date_time = date_time_obj.strftime('%d-%m-%Y, %H:%M')
