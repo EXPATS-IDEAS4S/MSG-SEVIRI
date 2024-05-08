@@ -12,7 +12,7 @@ path_fig = "/work/case_studies_expats/Germany_Flood_2021/Fig/"
 
 #Path tp the Clout Top Height files
 #path_to_cth = "/net/yube/case_studies_expats/Germany_Flood_2021/data/cloud_products/CTH_NWCSAF/NWC_SAF/" 
-path_to_cth = "/data/sat/msg/CM_SAF/CTH/"
+path_to_cth = "/data/sat/msg/CM_SAF/CTH_processed/"
 
 #filepattern of the MSG files
 natfile = "MSG*-SEVI-MSG*-*-NA.subset.nat"
