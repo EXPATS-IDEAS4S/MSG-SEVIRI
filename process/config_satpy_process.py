@@ -20,6 +20,9 @@ natfile = "MSG*-SEVI-MSG*-*-NA.subset.nat"
 #filepattern of the CTH files
 cth_file = 'CTXin*.nc' #"S_NWC_CTTH*.nc" 
 
+#path to the folder to store processed netcdf
+path_to_save = "/data/sat/msg/netcdf/"
+
 #Domain
 #lonmin, latmin, lonmax, latmax= 5, 48, 9, 52 #2021 Germany Flood Area
 lonmin, latmin, lonmax, latmax= 5, 42, 16, 51.5 #EXPATS
