@@ -50,7 +50,7 @@ def compute_timestamps_from_time_range(start_date, end_date):
         timestamps = []
         
         # Generate timestamps at 15-minute intervals until the end date
-        while current_time < end:
+        while current_time <= end:
             timestamps.append(current_time)
             current_time += timedelta(minutes=15)
         
@@ -255,9 +255,9 @@ if __name__ == "__main__":
     begin_time = time.time()
 
     year = "2023"
-    month = "04" #use "*" if all months considered
-    begin_date = year+'.04.01'
-    end_date = year+'.05.01' #end point is excluded
+    month = "06" #use "*" if all months considered
+    begin_date = year+'.06.01'
+    end_date = year+'.07.01' #end point is excluded
 
     timestamps = compute_timestamps_from_time_range(begin_date,end_date)   
     print(f'total number of timestamps in {begin_date}-{end_date}: {len(timestamps)}')
@@ -385,7 +385,7 @@ if __name__ == "__main__":
                 print(filename)
                 compress_and_save(ds_day,proj_file_path,filename)
                 #update dataset with the next day
-                ds_day = ds
+            ds_day = ds
 
         #print(ds_day)
         #update last day

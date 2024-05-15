@@ -5,8 +5,8 @@ from glob import glob
 # Path to your NetCDF file
 #path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
 #nc_file = 'CTXin20210712000000405SVMSGI1UD.nc'
-path_to_files = "/data/sat/msg/CM_SAF/CMA_processed/2023/04/01/"
-nc_file = "CMAin*405SVMSGI1UD.nc"
+path_to_files = "/data/sat/msg/netcdf/parallax/2023/06_nolatlon/"
+nc_file = "20230630-EXPATS-RG"
 
 fnames = sorted(glob(path_to_files+nc_file))
 print(fnames)

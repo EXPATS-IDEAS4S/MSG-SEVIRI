@@ -27,14 +27,10 @@ import glob
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-# get path to this directory
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
-
 # Default parameters
-DEFAULT_START_DATE = '2020-05-01'
-DEFAULT_END_DATE = '2020-06-01'
-directory = '/data/sat/msg/nat/2020/05'
+DEFAULT_START_DATE = '2017-04-01'
+DEFAULT_END_DATE = '2017-05-01'
+directory = '/data/sat/msg/nat/2017/04'
 log_dir = '/home/dcorradi/Documents/Codes/MSG-SEVIRI/download/log' 
 format = 'msgnative' 
 
