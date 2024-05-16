@@ -244,6 +244,32 @@ def initialize_empty_dataset(channels, lat_arr, lon_arr, regular_grid):
     return ds
 
 
+def create_dataset_with_lat_lon_dimensions(channels, lat_arr, lon_arr, regular_grid=True):
+    # Create an empty Dataset
+    ds = xr.Dataset()
+
+    if regular_grid:
+        # Loop through each channel and create a DataArray with lat and lon as dimensions
+        for channel in channels:
+            # Create a DataArray filled with NaN values
+            data_array = xr.DataArray(
+                np.full((len(lat_arr), len(lon_arr)), np.nan, dtype='float32'),
+                dims=("lat", "lon"),  # Set dimensions to lat and lon
+                coords={
+                    "lat": (["lat"], lat_arr.astype(np.float32)),  # Define latitude coordinate
+                    "lon": (["lon"], lon_arr.astype(np.float32))   # Define longitude coordinate
+                },
+                name=channel
+            )
+            # Add the DataArray to the Dataset
+            ds[channel] = data_array
+
+    # Expand dimensions to add a 'time' dimension, setting the axis to 0
+    ds = ds.expand_dims('time', axis=0)
+
+    return ds
+
+
 
 if __name__ == "__main__":
 
@@ -292,7 +318,8 @@ if __name__ == "__main__":
         print(f'Processing file number {t+1}/{len(timestamps)}')
         print(f'Current timestamp: {timestamp}')
 
-        ds = initialize_empty_dataset(channels, lat_arr, lon_arr, regular_grid)
+        #ds = initialize_empty_dataset(channels, lat_arr, lon_arr, regular_grid) 
+        ds = create_dataset_with_lat_lon_dimensions(channels, lat_arr, lon_arr, regular_grid)
 
         #add timestamp to dataset
         ds['time'] = [timestamp] 
@@ -351,8 +378,13 @@ if __name__ == "__main__":
                     #add channel values to the Dataarray
                     sat_da = xr.DataArray(
                     sat_data_crop.astype(np.float32),
-                    dims=("y", "x"),
-                    coords={"lat": ("y", lat_arr.astype(np.float32)), "lon": ("x", lon_arr.astype(np.float32))},
+                    #dims=("y", "x"),
+                    #coords={"lat": ("y", lat_arr.astype(np.float32)), "lon": ("x", lon_arr.astype(np.float32))},
+                    dims=("lat", "lon"),  # Set dimensions to lat and lon
+                    coords={
+                        "lat": (["lat"], lat_arr.astype(np.float32)),  # Define latitude coordinate
+                        "lon": (["lon"], lon_arr.astype(np.float32))   # Define longitude coordinate
+                    },
                     name=channels[ch_idx]
                     )
 

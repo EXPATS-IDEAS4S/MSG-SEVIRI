@@ -36,9 +36,9 @@ script_start_time=$(date +%s)
 #####CONFIG PARAMETERS
 
 # Default values for START_TIME, END_TIME, and DOWNLOAD_DIR
-default_start_time="2017-05-01T00:00"
-default_end_time="2017-06-01T00:00"
-default_download_dir="/data/sat/msg/nat/2017/05/"
+default_start_time="2017-06-01T00:00"
+default_end_time="2017-07-01T00:00"
+default_download_dir="/data/sat/msg/nat/2017/06/"
 
 # Use command-line arguments if provided, otherwise use default values
 START_TIME="${1:-$default_start_time}"
