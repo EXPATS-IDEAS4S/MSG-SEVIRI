@@ -428,64 +428,67 @@ if __name__ == "__main__":
             #print(file_msg)
             file_cth = cth_fnames[positions[1]]
             #print(file_cth)
-            scn = open_satpy_scene(file_msg,file_cth,msg_reader,cth_reader,parallax_correction)
+            try:
+                scn = open_satpy_scene(file_msg,file_cth,msg_reader,cth_reader,parallax_correction)
             
-            # loop over the channels 
-            for ch_idx in range(len(channels)):
-                #Load one channel
-                ch = get_channel(channels,ch_idx,parallax_correction)
-                scn.load([ch]) 
+                # loop over the channels 
+                for ch_idx in range(len(channels)):
+                    #Load one channel
+                    ch = get_channel(channels,ch_idx,parallax_correction)
+                    scn.load([ch]) 
 
-                #Crop to area of interest
-                crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
+                    #Crop to area of interest
+                    crop_scn = scn.crop(ll_bbox=(lonmin, latmin, lonmax, latmax))
 
-                #get the lat/lon coordsonly for one channel (as all of them share the same grid)
-                if ch_idx==0:
-                    #get coord in the cropped area
-                    area_crop = crop_scn[ch].attrs['area'] #area in m
-                    sat_lon_crop, sat_lat_crop = area_crop.get_lonlats() 
-                    #print(np.shape(sat_lat_crop),sat_lat_crop)
-                    #print(np.shape(sat_lon_crop),sat_lon_crop)
+                    #get the lat/lon coordsonly for one channel (as all of them share the same grid)
+                    if ch_idx==0:
+                        #get coord in the cropped area
+                        area_crop = crop_scn[ch].attrs['area'] #area in m
+                        sat_lon_crop, sat_lat_crop = area_crop.get_lonlats() 
+                        #print(np.shape(sat_lat_crop),sat_lat_crop)
+                        #print(np.shape(sat_lon_crop),sat_lon_crop)
 
-                    if not regular_grid:
-                        # create DataArrays with the coordinates using cloud mask grid
-                        lon_da = xr.DataArray(sat_lon_crop.astype(np.float32), dims=("y", "x"), name="lon_grid")
-                        lat_da = xr.DataArray(sat_lat_crop.astype(np.float32), dims=("y", "x"), name="lat_grid")
+                        if not regular_grid:
+                            # create DataArrays with the coordinates using cloud mask grid
+                            lon_da = xr.DataArray(sat_lon_crop.astype(np.float32), dims=("y", "x"), name="lon_grid")
+                            lat_da = xr.DataArray(sat_lat_crop.astype(np.float32), dims=("y", "x"), name="lat_grid")
 
-                        # combine DataArrays into xarray object
-                        ds["lon_grid"] = lon_da
-                        ds["lat_grid"] = lat_da
-                        #print(ds)
+                            # combine DataArrays into xarray object
+                            ds["lon_grid"] = lon_da
+                            ds["lat_grid"] = lat_da
+                            #print(ds)
 
-                #get data in the cropped area
-                sat_data_crop = crop_scn[ch].values #R/Tb
-                #print('sat data',sat_data_crop)
+                    #get data in the cropped area
+                    sat_data_crop = crop_scn[ch].values #R/Tb
+                    #print('sat data',sat_data_crop)
 
-                if regular_grid:
-                    #interpolate the missing points (NaN)
-                    sat_data_crop = fill_missing_data_with_interpolation(sat_lat_crop, sat_lon_crop, sat_data_crop)
+                    if regular_grid:
+                        #interpolate the missing points (NaN)
+                        sat_data_crop = fill_missing_data_with_interpolation(sat_lat_crop, sat_lon_crop, sat_data_crop)
+                        
+                        #regrid the sat data to a regular grid
+                        sat_data_crop = regrid_data(sat_lat_crop, sat_lon_crop, sat_data_crop, lat_reg_grid, lon_reg_grid, interp_method) 
+                        
+                        #add channel values to the Dataarray
+                        sat_da = xr.DataArray(
+                        sat_data_crop.astype(np.float32),
+                        #dims=("y", "x"),
+                        #coords={"lat": ("y", lat_arr.astype(np.float32)), "lon": ("x", lon_arr.astype(np.float32))},
+                        dims=("lat", "lon"),  # Set dimensions to lat and lon
+                        coords={
+                            "lat": (["lat"], lat_arr.astype(np.float32)),  # Define latitude coordinate
+                            "lon": (["lon"], lon_arr.astype(np.float32))   # Define longitude coordinate
+                        },
+                        name=channels[ch_idx]
+                        )
+
+                    else:        
+                        sat_da = xr.DataArray(sat_data_crop, dims=("y", "x"), name=channels[ch_idx])
                     
-                    #regrid the sat data to a regular grid
-                    sat_data_crop = regrid_data(sat_lat_crop, sat_lon_crop, sat_data_crop, lat_reg_grid, lon_reg_grid, interp_method) 
-                    
-                    #add channel values to the Dataarray
-                    sat_da = xr.DataArray(
-                    sat_data_crop.astype(np.float32),
-                    #dims=("y", "x"),
-                    #coords={"lat": ("y", lat_arr.astype(np.float32)), "lon": ("x", lon_arr.astype(np.float32))},
-                    dims=("lat", "lon"),  # Set dimensions to lat and lon
-                    coords={
-                        "lat": (["lat"], lat_arr.astype(np.float32)),  # Define latitude coordinate
-                        "lon": (["lon"], lon_arr.astype(np.float32))   # Define longitude coordinate
-                    },
-                    name=channels[ch_idx]
-                    )
-
-                else:        
-                    sat_da = xr.DataArray(sat_data_crop, dims=("y", "x"), name=channels[ch_idx])
-                
-                #add channel values to the Dataset
-                ds[channels[ch_idx]] = sat_da
+                    #add channel values to the Dataset
+                    ds[channels[ch_idx]] = sat_da
+            except:
+                print(f'corrupted timestamps: {t}')
         else:
             print(f'missing timestamps: {t}')      
         
