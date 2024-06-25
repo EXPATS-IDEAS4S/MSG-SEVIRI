@@ -10,7 +10,7 @@ import os
 
 ### Define Paths ###
 
-year = '2023'
+year = '2020'
 
 #path where cth data are stored
 path_to_files = '/data/sat/msg/CM_SAF/CTH/'+year+'/0*/*/'

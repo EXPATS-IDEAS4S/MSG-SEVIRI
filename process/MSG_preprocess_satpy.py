@@ -117,6 +117,33 @@ def extract_timestamps(filenames, type):
     return timestamps
 
 
+def filter_timestamps(timestamps, base_directory):
+    """
+    Filters out timestamps that fall on dates for which data has already been converted.
+    
+    Args:
+    timestamps: A list of timestamps to check.
+    base_directory: The base directory where the converted files are stored.
+    
+    Returns:
+    A list of timestamps that are not on dates with converted files.
+    """
+
+    date = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%SZ').date()
+    year, month, day = date.year, date.month, date.day
+
+    filename = f'{year:04d}{month:02d}{day:02d}-EXPATS-RG.nc'
+    file_path = os.path.join(base_directory, str(year), f'{month:02d}', filename)
+    
+    clean_timestamps = []
+    
+    for timestamp in timestamps:
+        if not os.path.isfile(file_path):
+            clean_timestamps.append(timestamp)
+    
+    return clean_timestamps
+
+
 def get_channel(channels, idx, parallax):
     ch = channels[idx]
     if parallax:
@@ -124,9 +151,41 @@ def get_channel(channels, idx, parallax):
 
     return ch
 
+
+def find_all_indices(lst, value):
+    """
+    Returns a list of all indices of value in lst.
+    
+    Args:
+    lst: The list to search.
+    value: The value to search for.
+
+    Returns:
+    A list of indices where value is found in lst.
+    """
+    return [index for index, element in enumerate(lst) if element == value]
+
+
+def find_highest_index(lst, value):
+    """
+    Returns the highest index of value in lst.
+    
+    Args:
+    lst: The list to search.
+    value: The value to search for.
+
+    Returns:
+    The highest index where value is found in lst, or raises ValueError if not found.
+    """
+    indices = find_all_indices(lst, value)
+    if indices:
+        return max(indices)
+    else:
+        raise ValueError
+
 def find_common_timestamp_position(timestamp, list1, list2):
     """
-    Checks if a given timestamp is present in both provided lists and returns the positions
+    Checks if a given timestamp is present in both provided lists and returns the highest positions
     in each list if found. If the timestamp is not found in either list, returns None.
 
     Args:
@@ -135,15 +194,16 @@ def find_common_timestamp_position(timestamp, list1, list2):
     list2: Second list of timestamps.
 
     Returns:
-    A tuple containing the positions in list1 and list2, or None if not found in both.
+    A tuple containing the highest positions in list1 and list2, or None if not found in both.
     """
     try:
-        pos1 = list1.index(timestamp) #index only finds the first occurrence?
-        pos2 = list2.index(timestamp)
+        pos1 = find_highest_index(list1, timestamp)  # Find the highest index in list1
+        pos2 = find_highest_index(list2, timestamp)  # Find the highest index in list2
         return (pos1, pos2)
     except ValueError:
         # This block is executed if the timestamp is not found in either list
         return None
+    
 
 def open_satpy_scene(file_msg, file_cth, msg_reader, cth_reader, parallax):
     """
@@ -270,6 +330,36 @@ def create_dataset_with_lat_lon_dimensions(channels, lat_arr, lon_arr, regular_g
     return ds
 
 
+def check_file_exists(folder_path, filename):
+    """
+    Check if a specific file exists within a given folder.
+    
+    Args:
+    folder_path (str): The path to the folder where the file might be located.
+    filename (str): The name of the file to check.
+    
+    Returns:
+    bool: True if the file exists, False otherwise.
+    """
+    # Combine the folder path and filename to create the full path to the file
+    file_path = os.path.join(folder_path, filename)
+    
+    # Check if the file exists at the specified path
+    return os.path.exists(file_path)
+
+
+def get_filename_and_path(timestamp, parallax_correction, path_to_save):
+    year_save = timestamp.strftime("%Y")
+    month_save = timestamp.strftime("%m")
+    day_save = timestamp.strftime("%d")
+    proj_file_path = path_to_save+"noparallax/"+year_save+"/"+month_save+"/"
+    if parallax_correction:
+        proj_file_path = path_to_save+"parallax/"+year_save+"/"+month_save+"/"
+    filename = year_save + month_save + day_save + '-EXPATS-RG.nc'
+
+    return proj_file_path, filename
+
+
 
 if __name__ == "__main__":
 
@@ -280,7 +370,7 @@ if __name__ == "__main__":
     # Start time
     begin_time = time.time()
 
-    year = "2023"
+    year = "2020"
     month = "06" #use "*" if all months considered
     begin_date = year+'.06.01'
     end_date = year+'.07.01' #end point is excluded
@@ -300,6 +390,8 @@ if __name__ == "__main__":
     msg_timestamps = extract_timestamps(fnames,'msg')
     cth_timestamps = extract_timestamps(cth_fnames, 'cth')
 
+    #TODO create a function that remore the timestamps of the file already converted
+
     check_filelist(msg_timestamps, cth_timestamps, 'msg_timestamps', 'cth_timestamps')
 
     #find a regular grid
@@ -310,7 +402,8 @@ if __name__ == "__main__":
         lat_reg_grid, lon_reg_grid = np.meshgrid(lat_arr, lon_arr, indexing='ij')
 
     # initialize day variable
-    last_day = '00' 
+    last_day = '00'
+    count = 0 
 
     #Read data at different temporal steps (use cth because complete)
     for t, timestamp in enumerate(timestamps):
@@ -318,14 +411,14 @@ if __name__ == "__main__":
         print(f'Processing file number {t+1}/{len(timestamps)}')
         print(f'Current timestamp: {timestamp}')
 
-        #ds = initialize_empty_dataset(channels, lat_arr, lon_arr, regular_grid) 
+        #extract day from time string
+        day = timestamp.strftime("%d")
+
+        #create an empty dataset
         ds = create_dataset_with_lat_lon_dimensions(channels, lat_arr, lon_arr, regular_grid)
 
         #add timestamp to dataset
         ds['time'] = [timestamp] 
-
-        #extract day from time string
-        day = timestamp.strftime("%d")
 
         #check if cth and msg exist for the corresponding timestamp
         positions = find_common_timestamp_position(timestamp,msg_timestamps,cth_timestamps)
@@ -396,28 +489,18 @@ if __name__ == "__main__":
         else:
             print(f'missing timestamps: {t}')      
         
-
         if day == last_day:
             ds_day = xr.concat([ds_day, ds], dim='time')
         else:
-            if t>0:
+            if count>0:
                 #save the daily dataset 
-                # Set the directory path to save files
-                year_save = timestamps[t-1].strftime("%Y")
-                month_save = timestamps[t-1].strftime("%m")
-                day_save = timestamps[t-1].strftime("%d")
-                proj_file_path = path_to_save+"noparallax/"+year_save+"/"+month_save+"/"
-                if parallax_correction:
-                    proj_file_path = path_to_save+"parallax/"+year_save+"/"+month_save+"/"
-                # Splitting the filename and extracting the first 5 components
-                #parts = file_msg.split('/')[-1].split('-')[0:5]
-                # Joining the parts with '-' to form a string, and then appending '-year-month-day'
-                #filename = '-'.join(parts) + '-' + year + month + day + '-EXPATS-RG'
-                filename = year_save + month_save + day_save + '-EXPATS-RG'
+                proj_file_path, filename = get_filename_and_path(timestamps[t-1],parallax_correction,path_to_save)
                 print(filename)
                 compress_and_save(ds_day,proj_file_path,filename)
                 #update dataset with the next day
             ds_day = ds
+        count+=1
+            
 
         #print(ds_day)
         #update last day
