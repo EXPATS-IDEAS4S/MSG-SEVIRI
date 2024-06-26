@@ -203,7 +203,10 @@ def find_common_timestamp_position(timestamp, list1, list2):
     """
     try:
         pos1 = find_highest_index(list1, timestamp)  # Find the highest index in list1
-        pos2 = find_highest_index(list2, timestamp)  # Find the highest index in list2
+        try:
+            pos2 = find_highest_index(list2, timestamp)  # Find the highest index in list2
+        except ValueError:
+            pos2 = None
         return (pos1, pos2)
     except ValueError:
         # This block is executed if the timestamp is not found in either list
@@ -230,7 +233,7 @@ def open_satpy_scene(file_msg, file_cth, msg_reader, cth_reader, parallax):
                  By default, bad quality scan lines are masked and replaced with np.nan,
                  based on the quality flags provided by the data.
     """
-    if parallax:
+    if parallax and file_cth is not None:
         scn = satpy.Scene({msg_reader: [file_msg], cth_reader: [file_cth]})
     else:
         scn = satpy.Scene(reader=msg_reader, filenames=[file_msg])
@@ -442,14 +445,15 @@ if __name__ == "__main__":
         ds['time'] = [timestamp] 
 
         #check if cth and msg exist for the corresponding timestamp
-        positions = find_common_timestamp_position(timestamp,msg_timestamps,cth_timestamps)
+        positions = find_common_timestamp_position(timestamp,msg_timestamps,list2=cth_timestamps)
         
         if positions:
             print(positions)
             file_msg = fnames[positions[0]]
             print(file_msg)
-            file_cth = cth_fnames[positions[1]]
+            file_cth = None if positions[1] is None else cth_fnames[positions[1]]
             print(file_cth)
+
             try:
                 scn = open_satpy_scene(file_msg,file_cth,msg_reader,cth_reader,parallax_correction)
             
@@ -538,7 +542,7 @@ if __name__ == "__main__":
 
     # Calculate elapsed time
     elapsed_time = end_time - begin_time
-    
+
     # Path to the text file where you want to save the elapsed time
     output_file_path = os.path.join(script_dir, 'log/elapsed_time_satpy.txt')
 
