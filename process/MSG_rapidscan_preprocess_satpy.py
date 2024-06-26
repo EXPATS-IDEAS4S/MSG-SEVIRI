@@ -70,22 +70,22 @@ def check_filelist(filelist1, filelist2, name1, name2):
         return print(f'{name2} has more files, {len(filelist2)}')
     
 
-def get_datetime_msg(filename):
+def get_datetime_msg(filename, time_res=15):
     """
     get date and time from filename
     example filename: MSG4-SEVI-MSG15-0100-NA-20190401001243.703000000Z-NA.subset.nat
     """
-    #get start and end time from filename format yyyymmddhhmmss
+    #get end time from filename format yyyymmddhhmmss
     end_scan_time = filename.split('-')[5].split('.')[0]
-    #print(end_scan_time)
-    min_str = end_scan_time[10:12]
-    #print(min_str)
-    #switch the minutes that indicate the end the scan to the minutes that indicate the 'rounded' start of the scan
-    if '00'<min_str<'15': min_str='00'
-    if '15'<min_str<'30': min_str='15' 
-    if '30'<min_str<'45': min_str='30'
-    if '45'<min_str<'59': min_str='45'
-    time_str = end_scan_time[0:10]+min_str
+    end_scan_minutes = int(end_scan_time[10:12])
+
+    # round down to closest scan start (depending on time resolution of MSG given by time_res)
+    start_scan_minutes = int(time_res * np.floor(end_scan_minutes/time_res))
+
+    # generate time string in correct format to convert to datetime
+    time_str = f"{end_scan_time[0:10]}{start_scan_minutes:02}"
+
+    # convert time string to datetime
     time_str = datetime.strptime(time_str, "%Y%m%d%H%M")
 
     return time_str
@@ -102,14 +102,14 @@ def get_datetime_cth(filename):
     return time_str
 
 
-def extract_timestamps(filenames, type):
+def extract_timestamps(filenames, type, time_res=15):
     """
     Extracts and returns a list of timestamps from a list of filenames.
     """
     timestamps = []
     for filename in filenames:
         if type == 'msg':
-            timestamp = get_datetime_msg(filename.split('/')[-1])
+            timestamp = get_datetime_msg(filename.split('/')[-1], time_res=time_res)
         elif type == 'cth':
             timestamp = get_datetime_cth(filename.split('/')[-1])
         else:
@@ -375,7 +375,7 @@ if __name__ == "__main__":
     year = 2022
     month = 6  # None if all months
     day = 5  # None if all days
-    time_res = 5
+    time_res = 15
 
     if day is not None:
         begin_date = f"{year}.{month:02}.{day:02}"
@@ -405,7 +405,7 @@ if __name__ == "__main__":
     cth_fnames = sorted(glob(path_pattern_cth))
     
     #extract timestamps
-    msg_timestamps = extract_timestamps(fnames,'msg')
+    msg_timestamps = extract_timestamps(fnames,'msg', time_res=time_res)
     cth_timestamps = extract_timestamps(cth_fnames, 'cth')
 
     #TODO create a function that remore the timestamps of the file already converted
