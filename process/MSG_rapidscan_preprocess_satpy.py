@@ -29,6 +29,9 @@ from config_satpy_process import parallax_correction, regular_grid
 from config_satpy_process import msg_reader, cth_reader
 from regrid_functions import regrid_data, fill_missing_data_with_interpolation, generate_regular_grid
 
+# get path of current python file
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
 # %%
 # list of custom methods
 
@@ -375,7 +378,7 @@ if __name__ == "__main__":
     year = 2022
     month = 6  # None if all months
     day = 5  # None if all days
-    time_res = 15
+    time_res = 5
 
     if day is not None:
         begin_date = f"{year}.{month:02}.{day:02}"
@@ -535,8 +538,9 @@ if __name__ == "__main__":
 
     # Calculate elapsed time
     elapsed_time = end_time - begin_time
+    
     # Path to the text file where you want to save the elapsed time
-    output_file_path = '/home/dcorradi/Documents/Codes/MSG-SEVIRI/process/log/elapsed_time_satpy.txt'
+    output_file_path = os.path.join(script_dir, 'log/elapsed_time_satpy.txt')
 
     # Write elapsed time to the file
     with open(output_file_path, 'w') as file:
