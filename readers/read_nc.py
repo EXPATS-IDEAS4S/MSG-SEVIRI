@@ -5,8 +5,8 @@ from glob import glob
 # Path to your NetCDF file
 #path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
 #nc_file = 'CTXin20210712000000405SVMSGI1UD.nc'
-path_to_files = "/net/yube/dcorradi/case_studies_expats/Germany_Flood_2021/data/MSG/MSGNATIVE/Parallax_Corrected/regrid/combination/"
-nc_file = 'MSG4-SEVI-MSG15-0100-NA-20210712144243_regular_grid.nc'
+path_to_files = "/data/sat/msg/CM_SAF/CMA/2023/04/01/"
+nc_file = 'CMAin20230401234500405SVMSGI1UD.nc'
 
 fnames = sorted(glob(path_to_files+nc_file))
 print(fnames)
@@ -14,7 +14,7 @@ print(fnames)
 #ds = xr.open_dataset(path_to_files+nc_file)
 ds = xr.open_mfdataset(fnames, combine='nested', concat_dim='time', parallel=True)
 
-print(ds.COT.values)
+print(ds.time.values)
 
 
 

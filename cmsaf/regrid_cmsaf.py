@@ -41,6 +41,15 @@ cmsaf_files = sorted(glob(cmsaf_folder+cmsaf_filepattern))
 ds_aux = xr.open_dataset(cmsaf_aux_path, decode_times=False)
 #print(ds_aux.lon.values)
 
+def get_cmsaf_lat_lon(ds_cmsaf, ds_aux):
+    # Get lat lon from AUX file
+    grid_idx = ds_cmsaf.georef_offset_corrected.values
+    lat_aux = ds_aux['lat'].values[grid_idx]
+    #print('lat aux', lat_aux)
+    lon_aux = ds_aux['lon'].values[grid_idx]
+    #print('lon aux', lon_aux)
+    return  lat_aux, lon_aux
+
 # Loop through each cmsaf file
 for cmsaf_file in cmsaf_files:
     #open dataset for cmsaf
@@ -55,12 +64,8 @@ for cmsaf_file in cmsaf_files:
     day = str(time).split('-')[2][0:2]
     #print(month,day)
 
-    # Get lat lon from AUX file
-    grid_idx = ds_cmsaf.georef_offset_corrected.values
-    lat_aux = ds_aux['lat'].values[grid_idx]
-    #print('lat aux', lat_aux)
-    lon_aux = ds_aux['lon'].values[grid_idx]
-    #print('lon aux', lon_aux)
+    #get the lat lon from auxilary 
+    lat_aux, lon_aux = get_cmsaf_lat_lon(ds_cmsaf, ds_aux)
 
     # Regrid the data
     cmsaf_data = ds_cmsaf['cma'].values[0,:,:]
