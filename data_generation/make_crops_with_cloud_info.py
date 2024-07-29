@@ -78,6 +78,7 @@ def process_files(crops_list, cloud_list, output_dir):
         lon_bounds = crop_ds['lon'].values[[0, -1]]
         #print(lat_bounds, lon_bounds)
 
+        #TODO try to include the same amount of pixels, maybe slice not proper or regrid didn't work?
         cloud_ds_sel = cloud_ds.sel(
             lat=slice(lat_bounds[0], lat_bounds[1]),
             lon=slice(lon_bounds[0], lon_bounds[1]),
@@ -93,7 +94,7 @@ def process_files(crops_list, cloud_list, output_dir):
         print(f"Saved combined dataset to {output_filepath}")
 
 # Define directories
-crop_directory = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc/'
+crop_directory = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc/' #70135?
 cloud_directory = '/data/sat/msg/CM_SAF/merged_cloud_properties/2013/'
 output_directory = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc_clouds/'
 
@@ -109,6 +110,7 @@ clouds_list = sorted(glob(f'{cloud_directory}*/*.nc'))
 #print(clouds_list)
 
 
-# Process the files
 process_files(crops_list, clouds_list, output_directory)
 
+
+#nohup  969551 killed!
