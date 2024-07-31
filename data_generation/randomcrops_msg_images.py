@@ -86,8 +86,10 @@ output_path =  f'/data/sat/msg/ml_train_crops/{cloud_prm}_{year}_{x_pixel}x{y_pi
 
 n_samples = 4
 
+cmap='Spectral_r'
 
-def create_fig(image, pixel_size, vmin=None, vmax=None):
+
+def create_fig(image, pixel_size, cmap, vmin=None, vmax=None):
     """
     Creates and returns a matplotlib figure with the given pixel size from an image.
 
@@ -103,7 +105,7 @@ def create_fig(image, pixel_size, vmin=None, vmax=None):
     """
     fig, ax = plt.subplots(figsize=pixel_size, dpi=1)
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    ax.imshow(image, cmap='Spectral_r', vmin=vmin, vmax=vmax)
+    ax.imshow(image, cmap=cmap, vmin=vmin, vmax=vmax)
     ax.axis(False)
     plt.close(fig)
     return fig
@@ -254,7 +256,7 @@ def multi_crops_param(file_path, image_path, filename):
         fig.savefig(cropped_image_path + filename+ "_germany_" +str(i)+ file_format, dpi=1)
 
 
-def multi_crops_simple(ds_image, x_pixel, y_pixel, n_sample, filename, out_path, vmin, vmax):
+def multi_crops_simple(ds_image, x_pixel, y_pixel, n_sample, filename, out_path, cmap, vmin, vmax):
     """
     Generates multiple random crops from the input dataset, saves them in NetCDF and TIFF formats.
 
@@ -308,7 +310,7 @@ def multi_crops_simple(ds_image, x_pixel, y_pixel, n_sample, filename, out_path,
             ds_crop.to_netcdf(out_path+'nc/'+filename+"_"+str(i)+'.nc')
             
             #save the RGB images
-            fig = create_fig(ds_crop.values.squeeze(),[x_pixel,y_pixel], vmin, vmax)
+            fig = create_fig(ds_crop.values.squeeze(),[x_pixel,y_pixel], cmap, vmin, vmax)
             fig.savefig(out_path+'tif/'+filename+"_"+str(i)+'.tif', dpi=1)
 
             print(out_path+'tif/'+filename+"_"+str(i), 'saved')
@@ -467,7 +469,7 @@ for file in msg_org_files:
             # saving cropped images
             filename_to_save = filename.split('-')[0]+'_'+str(timestamp).split('T')[1][0:5]+'_'+domain_name
             print(filename_to_save)
-            multi_crops_simple(ds_time, x_pixel, y_pixel, n_samples, filename_to_save, output_path, vmin, vmax)
+            multi_crops_simple(ds_time, x_pixel, y_pixel, n_samples, filename_to_save, output_path, cmap, vmin, vmax)
 
 print('crops generation is done!')
             

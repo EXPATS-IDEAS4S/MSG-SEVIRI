@@ -27,7 +27,7 @@ def read_and_display_tiff(file_path, plot=False):
 
 
 # checck one file
-image_dir = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/tif/'
-file_name = '20130930_23:45_EXPATS_0.tif'
+image_dir = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/'
+file_name = '20130401_00:00_EXPATS_0_spectral.tif'
 read_and_display_tiff(image_dir+file_name)
 
