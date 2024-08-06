@@ -179,11 +179,10 @@ begin_time = time.time()
 # Define directories
 crop_directory = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc/' #70135?
 cloud_directory = '/data/sat/msg/CM_SAF/merged_cloud_properties/2013/'
-output_csv = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/crops_stats.csv'
 
 categorical_vars = ['cph', 'cma']
-continuous_vars = ['cwp', 'cot', 'ctt', 'ctp', 'cth'] #TODO add cre
-msg_vars = ['IR_108']
+continuous_vars = ['cwp', 'cot', 'cre', 'ctt', 'ctp', 'cth']
+msg_vars = ['IR_108']#, 'IR_039', 'WV_062']
 
 #get list of cloud properties files and crop files
 msg_crops_list = sorted(glob(f'{crop_directory}*.nc'))
@@ -192,10 +191,9 @@ clouds_list = sorted(glob(f'{cloud_directory}*/*.nc'))
 #print(clouds_list)
 
 # Specify the number of samples you want to take
-num_samples = 1000  # For example, to take 10 random samples
+num_samples = 1000  
 
 output_csv = f'/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/crops_stats_{str(num_samples)}.csv'
-
 
 # Take a random sample from the list of cros
 random_sample_crop_list = random.sample(msg_crops_list, num_samples)
@@ -213,5 +211,5 @@ print(f"Elapsed time for computing {str(num_samples)}: {elapsed_time} seconds")
 
    
 
-#nohup 1215659
+#nohup 1417276
 

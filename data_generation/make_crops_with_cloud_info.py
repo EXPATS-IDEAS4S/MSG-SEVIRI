@@ -39,7 +39,9 @@ def find_corresponding_file(cloud_list, target_time):
             return filename
     return None
 
-def process_files(crops_list, cloud_list, output_dir):
+
+
+def process_files_old(crops_list, cloud_list, output_dir):
     """
     Process IR and cloud physical properties files to combine the data.
 
@@ -93,10 +95,101 @@ def process_files(crops_list, cloud_list, output_dir):
         cloud_ds_sel.to_netcdf(output_filepath)
         print(f"Saved combined dataset to {output_filepath}")
 
+def convert_to_float32(ds):
+    """
+    Convert all variables and coordinates in the dataset to float32, except for the time variable.
+    
+    Parameters:
+    ds (xarray.Dataset): The input dataset.
+
+    Returns:
+    xarray.Dataset: The dataset with variables and coordinates converted to float32.
+    """
+    # Convert data variables
+    for var in ds.data_vars:
+        if var != 'time':  # Exclude the time variable
+            ds[var] = ds[var].astype('float32')
+    
+    # Convert coordinates
+    for coord in ds.coords:
+        if coord != 'time':  # Exclude the time coordinate
+            ds.coords[coord] = ds.coords[coord].astype('float32')
+    
+    return ds
+
+
+
+def process_files(crop_file, cloud_list, var_list):
+    """
+    Process IR and cloud physical properties files to combine the data.
+
+    Parameters:
+    -----------
+    crops_list : list of str
+        List of file paths to the crop (IR) NetCDF files.
+    cloud_list : list of str
+        List of file paths to the cloud properties NetCDF files.
+    var_list : list of str
+        list of the variables to include in the dataset.
+
+    Returns:
+    --------
+    xr.Dataset
+    """
+    
+    crop_ds = xr.open_dataset(crop_file, decode_times=True)
+    #print(crop_ds)
+
+    # Get the time from the IR file
+    crop_time = crop_ds['time'].values[0]
+    print(crop_time)
+
+    # Find the corresponding cloud file based on the time
+    cloud_filepath = find_corresponding_file(cloud_list, crop_time)
+    if cloud_filepath is None:
+        print(f"No matching cloud file found for time: {crop_time}")
+
+    cloud_ds = xr.open_dataset(cloud_filepath, decode_times=True)
+    #print(cloud_ds)
+
+    cloud_ds = convert_to_float32(cloud_ds)
+
+    # Select only the variables in the list
+    cloud_ds = cloud_ds[var_list]
+
+    # Select the data within the lat/lon bounds of the IR data
+    lat_bounds = crop_ds['lat'].values[[0, -1]]
+    lon_bounds = crop_ds['lon'].values[[0, -1]]
+
+    # Create masks for the latitude and longitude conditions
+    lat_mask = (cloud_ds['lat'] >= lat_bounds[0]) & (cloud_ds['lat'] <= lat_bounds[1])
+    lon_mask = (cloud_ds['lon'] >= lon_bounds[0]) & (cloud_ds['lon'] <= lon_bounds[1])
+
+    # Apply the masks to select the data
+    data_ds_sel = cloud_ds.where(lat_mask & lon_mask, drop=True)
+
+    # Select the data for the specific time
+    data_ds_sel = data_ds_sel.sel(time=crop_time, method='nearest')
+
+    return data_ds_sel
+
+
+def save_nc(output_dir, crop_file, ds):
+
+    #output_filename = crop_file
+    output_filepath = output_dir+crop_file.split('/')[-1]
+    #print(output_filepath)
+
+    # Save the combined dataset to a new NetCDF file
+    ds.to_netcdf(output_filepath)
+    print(f"Saved combined dataset to {output_filepath}")
+    
+
 # Define directories
 crop_directory = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc/' #70135?
 cloud_directory = '/data/sat/msg/CM_SAF/merged_cloud_properties/2013/'
 output_directory = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc_clouds/'
+msg_directory = '/data/sat/msg/netcdf/parallax/2013/'
 
 # Check if the directory exists
 if not os.path.exists(output_directory):
@@ -108,9 +201,26 @@ crops_list = sorted(glob(f'{crop_directory}*.nc'))
 #print(crops_list)
 clouds_list = sorted(glob(f'{cloud_directory}*/*.nc'))
 #print(clouds_list)
+msg_list = sorted(glob(f'{msg_directory}*/*.nc'))
+#print(clouds_list)
+
+cloud_vars = ['cph', 'cma', 'cwp', 'cot', 'ctt', 'ctp', 'cth', 'cre']
+msg_vars = ['IR_108', 'WV_062', 'IR_039']
+
+#loop over the crops
+for crop_file in crops_list:
+    cloud_ds = process_files(crop_file, clouds_list, cloud_vars)
+    #print(cloud_ds)
+    msg_ds = process_files(crop_file, msg_list, msg_vars)
+    #print(msg_ds)
+
+    if cloud_ds is not None and msg_ds is not None:
+        merged_ds = xr.merge([cloud_ds,msg_ds])
+        #print(merged_ds)
+        
+    save_nc(output_directory, crop_file, merged_ds)
 
 
-process_files(crops_list, clouds_list, output_directory)
 
 
-#nohup  969551 killed!
+#nohup 1232829

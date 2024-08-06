@@ -425,6 +425,8 @@ else:
     print(f'Computed global min: {vmin} and global max: {vmax}')
     np.save(global_min_max_path, np.array([vmin, vmax]))
 
+exit()
+
 #loop over the nc files containing the channel
 for file in msg_org_files: 
     #extract filename from path

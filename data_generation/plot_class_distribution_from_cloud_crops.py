@@ -13,7 +13,7 @@ cloud_properties_crop_list = sorted(glob(cloud_properties_path + '*.nc'))
 labels_path = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/assignments_800ep.pt'
 output_path = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/'
 
-n_samples = len(cloud_properties_crop_list)
+n_samples = len(cloud_properties_crop_list[:10000])
 
 # Define the number of samples you want in the subsample
 n_subsample = 1000  # Change this to the desired number of subsamples
@@ -23,6 +23,8 @@ n_subsample = min(n_subsample, n_samples)
 
 # Randomly select a subset of indices
 subsample_indices = random.sample(range(n_samples), n_subsample)
+
+#subsample_indices = np.arange(n_subsample)
 
 # Read the labels
 assignments = torch.load(labels_path, map_location='cpu')
@@ -38,16 +40,16 @@ print(df_labels)
 # Filter out invalid labels (-100)
 df_labels = df_labels[df_labels['label'] != -100]
 
-"""
+
 ##########################################################
 ## Compute stats and plot distr for Continous variables ##
 ##########################################################
 
-continuous_vars = ['cwp', 'cot', 'ctt', 'ctp', 'cth']
-cont_vars_long_name = ['cloud water path', 'cloud optical thickness', 'cloud top temperature', 'cloud top pressure', 'cloud top height']
-cont_vars_units = ['kg/m^2', '', 'K', 'hPa', 'm']
-#cont_vars_scale = ['log', 'log', 'lin', 'lin', 'lin']
-cont_vars_dir = ['incr','incr','decr','decr','incr']
+continuous_vars = ['cwp', 'cot', 'cre', 'ctt', 'ctp', 'cth']
+cont_vars_long_name = ['cloud water path', 'cloud optical thickness', 'cloud particle effective radius', 'cloud top temperature', 'cloud top pressure', 'cloud top height']
+cont_vars_units = ['kg/m^2', '', 'm' , 'K', 'hPa', 'm']
+cont_vars_logscale = [True, True, True, False, False, False]
+cont_vars_dir = ['incr','incr', 'incr', 'decr','decr','incr']
 
 
 # Initialize lists to hold data for continuous and categorical variables
@@ -67,8 +69,7 @@ for i, row in df_labels.iterrows():
 df_continuous = pd.DataFrame(continuous_data)
 df_continuous['label'] = labels
 
-df_categorical = pd.DataFrame(categorical_data)
-df_categorical['label'] = labels
+
 
 # Compute stats for continuous variables
 continuous_stats = df_continuous.groupby('label').agg(['mean', 'std'])
@@ -80,12 +81,24 @@ continuous_stats.to_csv(f'{output_path}continuous_stats.csv', index=False)
 print('Continous Stats saved to CSV files.')
 
 # Plotting continuous variables box plots
-for var, long_name, unit, direction in zip(continuous_vars, cont_vars_long_name, cont_vars_units, cont_vars_dir):
+for var, long_name, unit, direction, scale in zip(continuous_vars, cont_vars_long_name, cont_vars_units, cont_vars_dir, cont_vars_logscale):
     fig, ax = plt.subplots(figsize=(10, 6))
-    sns.boxplot(data=df_continuous, x='label', y=var, ax=ax)
+    sns.boxplot(data=df_continuous, x='label', y=var, ax=ax, showfliers=False)
     plt.title(f'Boxplot of {long_name} ({var}) - {n_subsample} samples')
     plt.xlabel('Cloud Class Label')
     plt.ylabel(f'{long_name} ({unit})')
+    if scale:
+        plt.yscale('log')
+    
+        # Exclude zero values
+        non_zero_values = df_continuous[df_continuous[var] > 0][var]
+
+        # Find the minimum of the non-zero values
+        min_non_zero = non_zero_values.min()
+        print(min_non_zero)
+        #set y lim
+        plt.ylim(bottom=min_non_zero)
+
 
     # Reverse y axis if direction is 'decr'
     if direction == 'decr':
@@ -94,8 +107,8 @@ for var, long_name, unit, direction in zip(continuous_vars, cont_vars_long_name,
     # Save the figure
     fig.savefig(f'{output_path}{var}_boxplot_{n_subsample}.png', bbox_inches='tight')
     print(f'Figure saved: {output_path}{var}_boxplot_{n_subsample}.png')
-"""
 
+exit()
 
 ############################################################
 ## Compute stats and plot distr for Categorical variables ##
@@ -163,7 +176,7 @@ stats = df_labels.groupby('label')['cloudy_percentage'].agg(['mean', 'std']).res
 
 print(stats)
 
-exit()
+
 
 # Mapping dictionaries
 cph_mapping = {0: 'clear', 1: 'liquid', 2: 'ice'}
