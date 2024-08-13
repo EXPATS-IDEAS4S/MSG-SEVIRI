@@ -13,7 +13,7 @@ cloud_properties_crop_list = sorted(glob(cloud_properties_path + '*.nc'))
 labels_path = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/assignments_800ep.pt'
 output_path = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/'
 
-n_samples = len(cloud_properties_crop_list[:10000])
+n_samples = len(cloud_properties_crop_list[:12000])
 
 # Define the number of samples you want in the subsample
 n_subsample = 1000  # Change this to the desired number of subsamples
@@ -45,11 +45,11 @@ df_labels = df_labels[df_labels['label'] != -100]
 ## Compute stats and plot distr for Continous variables ##
 ##########################################################
 
-continuous_vars = ['cwp', 'cot', 'cre', 'ctt', 'ctp', 'cth']
-cont_vars_long_name = ['cloud water path', 'cloud optical thickness', 'cloud particle effective radius', 'cloud top temperature', 'cloud top pressure', 'cloud top height']
-cont_vars_units = ['kg/m^2', '', 'm' , 'K', 'hPa', 'm']
-cont_vars_logscale = [True, True, True, False, False, False]
-cont_vars_dir = ['incr','incr', 'incr', 'decr','decr','incr']
+continuous_vars = ['cwp', 'cot','ctt', 'ctp', 'cth', 'cre']
+cont_vars_long_name = ['cloud water path', 'cloud optical thickness', 'cloud top temperature', 'cloud top pressure', 'cloud top height', 'cloud particle effective radius']
+cont_vars_units = ['kg/m^2', '' , 'K', 'hPa', 'm', 'm']
+cont_vars_logscale = [False, False, False, False, False, False]
+cont_vars_dir = ['incr','incr', 'decr','decr','incr', 'incr']
 
 
 # Initialize lists to hold data for continuous and categorical variables

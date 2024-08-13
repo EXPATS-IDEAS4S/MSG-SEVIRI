@@ -109,15 +109,17 @@ def compute_statistics(dataset, variable, is_categorical):
     
     if is_categorical:
         unique, counts = np.unique(data, return_counts=True)
+        #print(unique, counts)
         total = counts.sum()
         for u, c in zip(unique, counts):
-            stats[f"{variable}_category_{int(u)}_percentage"] = np.round((c / total) * 100,3)
+            stats[f"{variable}_category_{int(u)}_percentage"] = (c / total)*100
+            #print(np.round((c / total)*100,2))
     else:
         percentiles = [1, 25, 50, 75, 99]
         for p in percentiles:
             data = data[~np.isnan(data)]
             if len(data)>0:
-                stats[f"{variable}_percentile_{p}"] = np.round(np.percentile(data, p),3)
+                stats[f"{variable}_percentile_{p}"] = np.percentile(data, p)
             else:
                 stats[f"{variable}_percentile_{p}"] = np.nan
     
@@ -191,7 +193,7 @@ clouds_list = sorted(glob(f'{cloud_directory}*/*.nc'))
 #print(clouds_list)
 
 # Specify the number of samples you want to take
-num_samples = 1000  
+num_samples = 5000  
 
 output_csv = f'/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/crops_stats_{str(num_samples)}.csv'
 
@@ -211,5 +213,6 @@ print(f"Elapsed time for computing {str(num_samples)}: {elapsed_time} seconds")
 
    
 
-#nohup 1417276
+#nohup 1477336
 
+#Elapsed time for computing 1000: 6614.142078876495 seconds, 13h circa for 5000 crops -> parallelization!
