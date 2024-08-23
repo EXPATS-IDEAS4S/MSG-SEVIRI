@@ -1,9 +1,9 @@
-
 import xarray as xr
 from random import randrange
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import PIL
 
 
 
@@ -224,6 +224,84 @@ def convert_crops_to_images(ds_image, x_pixel, y_pixel, filename, format, out_pa
         # Create the directory if it doesn't exist
         os.makedirs(out_dir) 
 
-    fig.savefig(f'{out_dir}/{filename}_{norm_type}.{format}', dpi=1)
+    crop_filepath = f'{out_dir}/{filename}_{norm_type}.{format}'
 
-    print(f'{out_dir}/{filename}_{norm_type}.{format} is saved')
+    fig.savefig(crop_filepath, dpi=1)
+
+    print(f'{crop_filepath} is saved')
+
+    #convert from RGBA to RGB
+    rgba_image = PIL.Image.open(crop_filepath)
+    rgb_image = rgba_image.convert('RGB')
+    rgb_image.save(crop_filepath)
+    rgb_image.close()
+    print(crop_filepath+ ' converted to RGB')
+
+
+
+def convert_crops_to_images_1band(ds_image, x_pixel, y_pixel, filename, format, out_path, vmin=None, vmax=None, norm_type=None):
+    """
+    Generates a cropped grayscale image from the input dataset and saves it in the specified format.
+
+    Parameters:
+    -----------
+    ds_image : xarray.Dataset or xarray.DataArray
+        The input dataset or data array containing the image data.
+    
+    x_pixel : int
+        The width of the crop in pixels.
+    
+    y_pixel : int
+        The height of the crop in pixels.
+    
+    filename : str
+        The base filename used to save the cropped image.
+    
+    format : str
+        The format in which the cropped image will be saved (e.g., 'tiff', 'png').
+    
+    out_path : str
+        The directory path where the cropped image will be saved.
+    
+    vmin : float, optional
+        The minimum value for color scaling in the image visualization.
+    
+    vmax : float, optional
+        The maximum value for color scaling in the image visualization.
+    
+    norm_type : str, optional
+        The normalization type to be used for saving. Default is None.
+    
+    Returns:
+    --------
+    None
+        The function saves the cropped image to the specified file path.
+    """
+    
+    # Normalize the data if vmin and vmax are provided
+    if vmin is not None and vmax is not None:
+        data = np.clip(ds_image.values, vmin, vmax)
+        data = (data - vmin) / (vmax - vmin) * 255.0
+    else:
+        data = ds_image.values
+    
+    # Convert the data to uint8 type
+    data = data.astype(np.uint8)
+
+    # Create a PIL image from the numpy array
+    image = PIL.Image.fromarray(data, mode='L')  # 'L' mode is for grayscale
+
+    # Define output directory
+    out_dir = f'{out_path}{format}_{norm_type}'
+
+    # Check if the directory exists
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir) 
+
+    # Define the complete file path
+    crop_filepath = f'{out_dir}/{filename}_{norm_type}.{format}'
+
+    # Save the image
+    image.save(crop_filepath)
+
+    print(f'{crop_filepath} is saved')

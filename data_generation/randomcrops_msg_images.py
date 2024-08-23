@@ -34,15 +34,10 @@ Author: Daniele Corradini
 Affiliation: University of Cologne, Germany
 Contact: dcorrad1@uni-koeln.de
 """
-import numpy as np
 import matplotlib.pyplot as plt
-import datetime 
 import xarray as xr
 import os
 from glob import glob
-from random import randrange
-from PIL import Image
-from datetime import datetime
 import time
 import pandas as pd
 
@@ -57,17 +52,12 @@ cloud_prm = 'IR_108' #'cot', WV_062, IR_039
 
 cmap='Greys' #'Spectral_r' #Gray
 
-x_pixel, y_pixel = 128
+x_pixel = 128
+y_pixel = 128
 
 crops_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc/'
 
 out_dir = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/'
-
-# Check if the directory exists
-if not os.path.exists(out_dir):
-    # Create the directory if it doesn't exist
-    os.makedirs(out_dir) 
-
 
 crop_file_list = sorted(glob(crops_path+'*.nc'))
 print('total files are - '+ str(len(crop_file_list)))
@@ -77,9 +67,10 @@ crop_stat = os.path.join(out_dir, f'{cloud_prm}_statistics.csv')
 df = pd.read_csv(crop_stat)
 
 # Define the name of the normalization depending on the lower and upper bounds
-norm_types = ['Min-Max', '1th-99th', '5th-95th']
+norm_types =  ['10th-90th','25th-75th'] #['Min-Max', '1th-99th', '5th-95th']
 
 for norm_type in norm_types:
+    print(norm_type)
     #get the right scaling
     vmin = df.loc[df['Statistic'] == norm_type.split('-')[0], 'Value'].values[0]
     vmax = df.loc[df['Statistic'] == norm_type.split('-')[1], 'Value'].values[0]
@@ -90,8 +81,10 @@ for norm_type in norm_types:
         filename = file.split('/')[-1].split('.')[0] 
         print(filename)    
 
-        #open the nc crop with xarray
-        ds = xr.open_dataset(file)            
+        #open the nc crop with xarray and select the desired variable
+        ds = xr.open_dataset(file)  
+        ds = ds[cloud_prm]
+        #print(ds)          
 
         convert_crops_to_images(ds, x_pixel, y_pixel, filename, image_format, out_dir, cmap, vmin, vmax, norm_type)
 
@@ -101,3 +94,5 @@ end_time = time.time()
 
 elapsed_time = end_time - start_time
 print(f"Total execution time: {elapsed_time:.2f} seconds")            
+
+#2198251 nohup
