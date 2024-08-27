@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 from math import sqrt
 import random
 
-train_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/tif_5th-95th/'
+train_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/tif_25th-75th/'
 train_cot_files = glob.glob(os.path.join(train_path,"*.tif"))
 
 x_pixels, y_pixels=128,128 

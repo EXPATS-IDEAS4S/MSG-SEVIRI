@@ -72,7 +72,7 @@ def plot_distribution_of_crops(crop_file_paths, bins, norm_type, out_path):
 
 
 
-norm_type = '10th-90th'
+norm_type = '25th-75th'
 
 # checck one file
 image_dir = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/tif_{norm_type}/'

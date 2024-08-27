@@ -1,5 +1,5 @@
 """
-This script processes IR crop files and cloud physical properties files to combine their data based on matching timestamps.
+This script processes IR crop files and cloud physical properties files to create nc crops of CMA that matches the one with IR.
 
 The script consists of the following main components:
 1. Function `find_corresponding_file`: Finds the corresponding cloud file based on the timestamp.
@@ -16,6 +16,8 @@ Example Usage:
 import xarray as xr
 import os
 from glob import glob
+import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor
 
 def find_corresponding_file(cloud_list, target_time):
     """
@@ -118,7 +120,6 @@ def convert_to_float32(ds):
     return ds
 
 
-
 def process_files(crop_file, cloud_list, var_list):
     """
     Process IR and cloud physical properties files to combine the data.
@@ -186,41 +187,71 @@ def save_nc(output_dir, crop_file, ds):
     
 
 # Define directories
-crop_directory = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc/' #70135?
-cloud_directory = '/data/sat/msg/CM_SAF/merged_cloud_properties/2013/'
-output_directory = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc_clouds/'
-msg_directory = '/data/sat/msg/netcdf/parallax/2013/'
+crop_directory = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc/' #70135?
+cloud_directory = '/data/sat/msg/CM_SAF/merged_cloud_properties/'
+output_directory = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc_clouds/'
+msg_directory = '/data/sat/msg/netcdf/parallax/'
 
 # Check if the directory exists
 if not os.path.exists(output_directory):
     # Create the directory if it doesn't exist
     os.makedirs(output_directory) 
 
+
 #get list of cloud properties files and crop files
 crops_list = sorted(glob(f'{crop_directory}*.nc'))
-#print(crops_list)
-clouds_list = sorted(glob(f'{cloud_directory}*/*.nc'))
-#print(clouds_list)
-msg_list = sorted(glob(f'{msg_directory}*/*.nc'))
-#print(clouds_list)
+
+# Initialize lists to store file paths
+clouds_list = []
+msg_list = []
+
+years = ['2013', '2014']
+
+# Iterate over the years and gather the files for each year
+for year in years:
+    clouds_list.extend(sorted(glob(f'{cloud_directory}{year}/*/*.nc')))
+    msg_list.extend(sorted(glob(f'{msg_directory}{year}/*/*.nc')))
+
+# Print the lists (optional)
+#print("Crops List:", crops_list, len(crops_list)) #33792
+#print("Clouds List:", clouds_list, len(clouds_list)) #366
+#print("MSG List:", msg_list, len(msg_list)) #366
+
 
 cloud_vars = ['cph', 'cma', 'cwp', 'cot', 'ctt', 'ctp', 'cth', 'cre']
-msg_vars = ['IR_108', 'WV_062', 'IR_039']
+#msg_vars = ['IR_108', 'WV_062', 'IR_039']
 
-#loop over the crops
-for crop_file in crops_list:
-    cloud_ds = process_files(crop_file, clouds_list, cloud_vars)
-    #print(cloud_ds)
-    msg_ds = process_files(crop_file, msg_list, msg_vars)
-    #print(msg_ds)
-
-    if cloud_ds is not None and msg_ds is not None:
-        merged_ds = xr.merge([cloud_ds,msg_ds])
-        #print(merged_ds)
+# #loop over the crops
+# for crop_file in crops_list:
+#     cloud_ds = process_files(crop_file, clouds_list, cloud_vars)
+#     #print(cloud_ds)
+#     #msg_ds = process_files(crop_file, msg_list, msg_vars)
+#     #print(msg_ds)
         
-    save_nc(output_directory, crop_file, merged_ds)
+#     save_nc(output_directory, crop_file, cloud_ds)
+
+
+# Define your processing function
+def process_and_save(crop_file):
+    cloud_ds = process_files(crop_file, clouds_list, cloud_vars)
+    #msg_ds = process_files(crop_file, msg_list, msg_vars)  # Uncomment if needed
+    save_nc(output_directory, crop_file, cloud_ds)
+    return crop_file  # Optionally return something for tracking progress
+
+# Parallel processing of crops_list
+with ProcessPoolExecutor() as executor:
+    futures = {executor.submit(process_and_save, crop_file): crop_file for crop_file in crops_list}
+    
+    # Optionally track progress and handle exceptions
+    for future in concurrent.futures.as_completed(futures):
+        crop_file = futures[future]
+        try:
+            data = future.result()
+            print(f"Processed and saved: {crop_file}")
+        except Exception as e:
+            print(f"Error processing {crop_file}: {e}")
 
 
 
 
-#nohup 1232829
+#nohup 191582
