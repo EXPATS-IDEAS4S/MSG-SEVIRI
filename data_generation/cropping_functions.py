@@ -145,7 +145,7 @@ def compute_global_min_max(file_paths, variable):
 
 
 
-def create_fig(image, pixel_size, cmap, vmin=None, vmax=None):
+def create_fig(image, pixel_size, cmap, vmin=None, vmax=None, flip=True):
     """
     Creates and returns a matplotlib figure with the given pixel size from an image.
 
@@ -157,8 +157,11 @@ def create_fig(image, pixel_size, cmap, vmin=None, vmax=None):
     :param pixel_size: A tuple representing the pixel size (width, height) to be used as the figure size.
     :param vmin: The minimum data value that corresponds to the colormap's lower limit.
     :param vmax: The maximum data value that corresponds to the colormap's upper limit.
+    :param flip: If True, the image will be flipped upside down before being plotted.
     :return: The created matplotlib figure.
     """
+    if flip:
+        image = np.flipud(image)
     fig, ax = plt.subplots(figsize=pixel_size, dpi=1)
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     ax.imshow(image, cmap=cmap, vmin=vmin, vmax=vmax)

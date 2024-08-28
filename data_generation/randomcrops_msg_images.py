@@ -1,40 +1,35 @@
 """
-This script processes satellite image data to generate multiple random crops, saving them in NetCDF and TIFF formats.
+This script processes cropped satellite data to generate multiple random imgaes crops, applies cloud masking.
 
 The script performs the following tasks:
-1. Reads and merges NetCDF files containing satellite data organized in monthly folders.
-2. Filters the dataset by a specified geographical domain and time range.
-3. Generates random crops from the dataset, ensuring they are free of NaN values.
-1. Saves the cropped data in NetCDF format to retain original values and coordinates.
-5. Saves the cropped images in TIFF format for visual inspection.
+1. Loads satellite data from NetCDF files, specifically focusing on a specified cloud parameter (e.g., 'IR_108').
+2. Optionally applies a cloud mask to filter out non-cloudy areas, setting those pixels to a predefined field value.
+3. Converts the cropped data to TIFF images, using specified colormaps and normalization bounds.
 
-Key parameters:
-- `year`: Year of the data to process.
-- `msg_path`: Path to the directory containing the NetCDF files.
-- `output_path`: Directory where cropped images and data will be saved.
-- `month_start`, `month_end`: Range of months to process.
-- `hour_start`, `hour_end`: Range of hours (UTC) to process.
+### Key Parameters:
+- `cloud_prm`: The cloud parameter of interest (e.g., 'IR_108') that is used for processing.
+- `crops_path`: Directory path containing the NetCDF files with the satellite image data.
+- `cma_path`: Directory path containing the NetCDF files with cloud mask data.
+- `apply_cma`: Boolean flag indicating whether to apply cloud masking.
+- `out_dir`: Directory where cropped images and data will be saved.
 - `x_pixel`, `y_pixel`: Dimensions of the random crops in pixels.
-- `n_samples`: Number of random crops to generate per dataset.
-- `domain`: Geographical domain boundaries for filtering the data.
-- `cloud_prm`: Cloud parameter of interest (e.g., 'IR_108').
+- `image_format`: The format of the output images (e.g., 'tif').
+- `norm_types`: List of normalization methods to be applied (e.g., '10th-90th').
+- `vmin`, `vmax`: Normalization bounds based on the selected statistics.
+- `crop_file_list`: List of NetCDF files containing the satellite data to be processed.
+- `cma_file_list`: List of NetCDF files containing the cloud mask data.
 
-The script uses the following functions:
-- `create_fig(image, pixel_size)`: Creates and returns a matplotlib figure with the given pixel size from an image.
-- `multi_crops_param(file_path, image_path, filename)`: Generates random crops with various cloud parameters and saves them.
-- `multi_crops_simple(ds_image, x_pixel, y_pixel, n_sample, filename, out_path)`: Generates multiple random crops from the input dataset and saves them.
-- `filter_by_domain(ds, domain)`: Filters the input dataset based on a specified geographical domain.
-- `filter_by_time(ds, time)`: Filters the input dataset based on a specified time.
+### Functions Used:
+- `convert_crops_to_images(msg_ds, x_pixel, y_pixel, filename, image_format, out_dir, cmap, vmin, vmax, norm_type)`: Converts cropped data into image format.
 
-Usage:
-- Adjust the parameters as needed to fit the desired input data and output requirements.
-- Ensure the input data is properly organized in the specified directory structure.
+### Usage:
+1. Adjust the input parameters (e.g., `cloud_prm`, `crops_path`, `apply_cma`, `norm_types`) to fit the specific dataset and processing requirements.
+2. Ensure that the directory structure and file paths for input data are correctly specified.
 
 Author: Daniele Corradini
 Affiliation: University of Cologne, Germany
 Contact: dcorrad1@uni-koeln.de
 """
-import matplotlib.pyplot as plt
 import xarray as xr
 import os
 from glob import glob
@@ -57,17 +52,31 @@ y_pixel = 128
 
 crops_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc/'
 
+cma_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc_clouds/'
+
+apply_cma = True
+
 out_dir = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/'
 
-crop_file_list = sorted(glob(crops_path+'*.nc'))
-print('total files are - '+ str(len(crop_file_list)))
+crop_file_list = sorted(glob(crops_path+'*.nc'))[:100]
+print('total msg crops are - '+ str(len(crop_file_list)))
+
+cma_file_list = sorted(glob(cma_path+'*.nc'))[:100]
+print('total cma crops are - '+ str(len(cma_file_list)))
+
+if apply_cma and len(crop_file_list)!=len(cma_file_list):
+    print('crops and cma do not match!')
+    exit()
 
 # Open the csv file with hte crops statistics
 crop_stat = os.path.join(out_dir, f'{cloud_prm}_statistics.csv')
 df = pd.read_csv(crop_stat)
 
+if apply_cma:
+    out_dir = out_dir+'CMA/'
+
 # Define the name of the normalization depending on the lower and upper bounds
-norm_types =  ['10th-90th','25th-75th'] #['Min-Max', '1th-99th', '5th-95th']
+norm_types =  ['10th-90th'] #['Min-Max', '1th-99th', '5th-95th','25th-75th']
 
 for norm_type in norm_types:
     print(norm_type)
@@ -76,17 +85,25 @@ for norm_type in norm_types:
     vmax = df.loc[df['Statistic'] == norm_type.split('-')[1], 'Value'].values[0]
 
     #loop over the nc files containing the channel
-    for file in crop_file_list: 
+    for msg_crop, cma_crop in zip(crop_file_list, cma_file_list): 
         #extract filename from path
-        filename = file.split('/')[-1].split('.')[0] 
+        filename = msg_crop.split('/')[-1].split('.')[0] 
         print(filename)    
 
         #open the nc crop with xarray and select the desired variable
-        ds = xr.open_dataset(file)  
-        ds = ds[cloud_prm]
-        #print(ds)          
+        msg_ds = xr.open_dataset(msg_crop)  
+        msg_ds = msg_ds[cloud_prm]
+        #print(ds) 
 
-        convert_crops_to_images(ds, x_pixel, y_pixel, filename, image_format, out_dir, cmap, vmin, vmax, norm_type)
+        #apply cloud mask
+        if apply_cma:
+            cma_ds = xr.open_dataset(cma_crop)
+            cloud_mask = cma_ds['cma']
+
+            msg_ds = msg_ds.where(cloud_mask == 1, vmax)
+            
+
+        convert_crops_to_images(msg_ds, x_pixel, y_pixel, filename, image_format, out_dir, cmap, vmin, vmax, norm_type)
 
 print('crops conversion to images is done!')
             
@@ -94,5 +111,3 @@ end_time = time.time()
 
 elapsed_time = end_time - start_time
 print(f"Total execution time: {elapsed_time:.2f} seconds")            
-
-#2198251 nohup

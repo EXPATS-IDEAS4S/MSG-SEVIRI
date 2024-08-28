@@ -1,12 +1,11 @@
 """
-This script processes satellite image data to generate multiple random crops, saving them in NetCDF and TIFF formats.
+This script processes satellite image data to generate multiple random crops, saving them in NetCDF.
 
 The script performs the following tasks:
 1. Reads and merges NetCDF files containing satellite data organized in monthly folders.
 2. Filters the dataset by a specified geographical domain and time range.
 3. Generates random crops from the dataset, ensuring they are free of NaN values.
-1. Saves the cropped data in NetCDF format to retain original values and coordinates.
-5. Saves the cropped images in TIFF format for visual inspection.
+4. Saves the cropped data in NetCDF format, retaining also the coordinates.
 
 Key parameters:
 - `year`: Year of the data to process.
@@ -20,9 +19,7 @@ Key parameters:
 - `cloud_prm`: Cloud parameter of interest (e.g., 'IR_108').
 
 The script uses the following functions:
-- `create_fig(image, pixel_size)`: Creates and returns a matplotlib figure with the given pixel size from an image.
-- `multi_crops_param(file_path, image_path, filename)`: Generates random crops with various cloud parameters and saves them.
-- `multi_crops_simple(ds_image, x_pixel, y_pixel, n_sample, filename, out_path)`: Generates multiple random crops from the input dataset and saves them.
+- `crops_nc`: Creates the crops in xarray format and save it in netcdf 
 - `filter_by_domain(ds, domain)`: Filters the input dataset based on a specified geographical domain.
 - `filter_by_time(ds, time)`: Filters the input dataset based on a specified time.
 
@@ -155,4 +152,3 @@ end_time = time.time()
 elapsed_time = end_time - start_time
 print(f"Total execution time: {elapsed_time:.2f} seconds")            
 
-#nohup 4024392
