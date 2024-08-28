@@ -47,6 +47,8 @@ cloud_prm = 'IR_108' #'cot', WV_062, IR_039
 
 cmap='Greys' #'Spectral_r' #Gray
 
+colormode = 'RGB'
+
 x_pixel = 128
 y_pixel = 128
 
@@ -103,7 +105,7 @@ for norm_type in norm_types:
             msg_ds = msg_ds.where(cloud_mask == 1, vmax)
             
 
-        convert_crops_to_images(msg_ds, x_pixel, y_pixel, filename, image_format, out_dir, cmap, vmin, vmax, norm_type)
+        convert_crops_to_images(msg_ds, x_pixel, y_pixel, filename, image_format, out_dir, cmap, vmin, vmax, norm_type, colormode)
 
 print('crops conversion to images is done!')
             

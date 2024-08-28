@@ -171,14 +171,14 @@ def create_fig(image, pixel_size, cmap, vmin=None, vmax=None, flip=True):
 
 
 
-def convert_crops_to_images(ds_image, x_pixel, y_pixel, filename, format, out_path, cmap, vmin, vmax, norm_type):
+def convert_crops_to_images(ds_image, x_pixel, y_pixel, filename, format, out_path, cmap, vmin, vmax, norm_type, color_mode):
     """
     Generates a cropped image from the input dataset and saves it in the specified format.
 
     This function takes an input dataset and generates a cropped image based on the specified 
     pixel dimensions (x_pixel, y_pixel). The cropped image is saved using the specified format 
     (e.g., TIFF, PNG) and file path. The function uses the provided colormap and value range 
-    (vmin, vmax) to enhance the image visualization.
+    (vmin, vmax) to enhance the image visualization. It also allows saving images in RGB or greyscale.
 
     Parameters:
     -----------
@@ -210,35 +210,58 @@ def convert_crops_to_images(ds_image, x_pixel, y_pixel, filename, format, out_pa
     vmax : float
         The maximum value for color scaling in the image visualization.
     
+    color_mode : str, optional (default='RGB')
+        The color mode for saving the image, either 'RGB' or 'greyscale'.
+
     Returns:
     --------
     None
         The function does not return any value. It saves the cropped image to the specified file path.
     """
+
     
     #save the images
     fig = create_fig(ds_image.values.squeeze(),[x_pixel,y_pixel], cmap, vmin, vmax)
 
     # Define output directory
-    out_dir = f'{out_path}{format}_{norm_type}'
+    out_dir = f'{out_path}{format}_{norm_type}_{color_mode}'
 
     # Check if the directory exists
     if not os.path.exists(out_dir):
         # Create the directory if it doesn't exist
         os.makedirs(out_dir) 
 
-    crop_filepath = f'{out_dir}/{filename}_{norm_type}.{format}'
+    crop_filepath = f'{out_dir}/{filename}_{norm_type}_{color_mode}.{format}'
 
     fig.savefig(crop_filepath, dpi=1)
 
     print(f'{crop_filepath} is saved')
 
-    #convert from RGBA to RGB
-    rgba_image = PIL.Image.open(crop_filepath)
-    rgb_image = rgba_image.convert('RGB')
-    rgb_image.save(crop_filepath)
-    rgb_image.close()
-    print(crop_filepath+ ' converted to RGB')
+    # Open the saved image for conversion
+    image = PIL.Image.open(crop_filepath)
+
+    # Convert based on the specified color mode
+    if color_mode == 'RGB':
+        converted_image = image.convert('RGB')
+        converted_image.save(crop_filepath)
+        print(f'{crop_filepath} converted to RGB')
+    elif color_mode == 'greyscale':
+        converted_image = image.convert('L')  # 'L' mode is greyscale in PIL
+        converted_image.save(crop_filepath)
+        print(f'{crop_filepath} converted to greyscale')
+    else: 
+        print('color mode not recognized!')
+
+    # Close the image to free resources
+    converted_image.close()
+    image.close()
+
+    # #convert from RGBA to RGB
+    # rgba_image = PIL.Image.open(crop_filepath)
+    # rgb_image = rgba_image.convert('RGB')
+    # rgb_image.save(crop_filepath)
+    # rgb_image.close()
+    # print(crop_filepath+ ' converted to RGB')
 
 
 

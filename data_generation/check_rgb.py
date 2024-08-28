@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from glob import glob
 import numpy as np
 
-def read_and_display_tiff(file_path, print_metadata=False, plot=False):
+def read_and_display_tiff(file_path, print_metadata=False, plot=False, colormode='RGB'):
     # Open the TIFF file using rasterio
     with rasterio.open(file_path) as src:
         # Get metadata of the image
@@ -14,8 +14,9 @@ def read_and_display_tiff(file_path, print_metadata=False, plot=False):
         #If the image has more than one band, read them as needed
         #Example: for RGB image with 3 bands
         band1 = src.read(1)
-        band2 = src.read(2)
-        band3 = src.read(3)
+        if colormode == 'RGB':
+            band2 = src.read(2)
+            band3 = src.read(3)
         #print(band1)
         #print(band2)
         #print(band3)
@@ -72,19 +73,20 @@ def plot_distribution_of_crops(crop_file_paths, bins, norm_type, out_path):
 
 
 
-norm_type = '25th-75th'
+norm_type = '10th-90th'
+color_mode = 'greyscale'
 
 # checck one file
-image_dir = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/tif_{norm_type}/'
-file_name = f'20130401_23:30_EXPATS_0_{norm_type}.tif'
+image_dir = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/CMA/tif_{norm_type}_{color_mode}/'
+file_name = f'20130402_01:00_EXPATS_0_{norm_type}_{color_mode}.tif'
 band1 = read_and_display_tiff(image_dir+file_name, print_metadata=True)[0]
 print(band1)
 
-# Open all crops
-crop_list = sorted(glob(image_dir+'*tif'))
+# # Open all crops
+# crop_list = sorted(glob(image_dir+'*tif'))
 
 
-bins =  np.arange(0, 255 + 2, 2)
+# bins =  np.arange(0, 255 + 2, 2)
 
-plot_distribution_of_crops(crop_list, bins, norm_type, image_dir )
+# plot_distribution_of_crops(crop_list, bins, norm_type, image_dir )
 
