@@ -6,8 +6,10 @@ import torchvision.transforms as transforms
 from math import sqrt
 import random
 
-train_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/tif_25th-75th/'
+train_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/tif_10th-90th/'
 train_cot_files = glob.glob(os.path.join(train_path,"*.tif"))
+
+RGB = True
 
 x_pixels, y_pixels=128,128 
 
@@ -15,7 +17,7 @@ x_pixels, y_pixels=128,128
 r_channel ,r_total=0,0
 g_channel, g_total=0,0
 b_channel, b_total=0,0
- 
+
 
 transform = transforms.Compose([
     transforms.ToTensor()
@@ -28,9 +30,13 @@ for file in train_cot_files1:
     img = Image.open(file)
     img_tr = transform(img)
     img_np = np.array(img_tr)
-    r_channel = r_channel + np.sum(img_np[:,:,0])
-    g_channel = g_channel + np.sum(img_np[:,:,1])
-    b_channel = b_channel + np.sum(img_np[:,:,2])
+    #print(img_np.shape) # shape is (color channels, x, y) color channel is 1 for GS and 3 for RGB
+    if RGB:
+        r_channel = r_channel + np.sum(img_np[0,:,:])
+        g_channel = g_channel + np.sum(img_np[1,:,:])
+        b_channel = b_channel + np.sum(img_np[2,:,:])
+    else:
+        r_channel = r_channel + np.sum(img_np[0, :, :])
 
 
 num = len(train_cot_files1) * x_pixels * y_pixels
@@ -44,20 +50,26 @@ for file in train_cot_files1:
     img = Image.open(file)
     img_tr = transform(img)
     img_np = np.array(img_tr)
-    r_total = r_total + np.sum((img_np[:, :, 0] - r_mean) ** 2)
-    g_total = g_total + np.sum((img_np[:, :, 1] - g_mean) ** 2)
-    b_total = b_total + np.sum((img_np[:, :, 2] - b_mean) ** 2)
+    #print(img_np)
+    if RGB:
+        r_total = r_total + np.sum((img_np[0, :, :] - r_mean) ** 2)
+        g_total = g_total + np.sum((img_np[1, :, :] - g_mean) ** 2)
+        b_total = b_total + np.sum((img_np[2, :, :] - b_mean) ** 2)
+    else:
+        r_total = r_total + np.sum((img_np[0, :, :] - r_mean) ** 2)
 
     
 R_std = sqrt(r_total / num)
 G_std = sqrt(g_total / num)
 B_std = sqrt(b_total / num)
 
-print('mean of RGB is - ' + str(r_mean),str(g_mean),str(b_mean))
+print('mean of image intensity is - ' + str(r_mean),str(g_mean),str(b_mean))
 
 print('')
-print('std of RGB is - ' + str(R_std),str(G_std),str(B_std))
+print('std of image intensity is - ' + str(R_std),str(G_std),str(B_std))
 print('')
 
 np.save(f'{train_path}mean.npy', np.array([r_mean,g_mean,b_mean]))
 np.save(f'{train_path}std.npy', np.array([R_std,G_std,B_std]))
+
+#1604704

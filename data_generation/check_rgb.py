@@ -29,11 +29,11 @@ def read_and_display_tiff(file_path, print_metadata=False, plot=False, colormode
             plt.axis('off')  # Hide axis
             plt.show()
 
-        return band1, band2, band3
+        return band1#, band2, band3
 
 
 
-def plot_distribution_of_crops(crop_file_paths, bins, norm_type, out_path):  
+def plot_distribution_of_crops(crop_file_paths, bins, norm_type, out_path, colormode):  
     """
     Plots the distribution of values from a specified band of multiple TIFF crops.
 
@@ -52,9 +52,9 @@ def plot_distribution_of_crops(crop_file_paths, bins, norm_type, out_path):
 
     # Iterate over each crop file path
     for file_path in crop_file_paths:
-        print(file_path.split('/')[-1])
+        #print(file_path.split('/')[-1])
         # Extract the first band and flatten it
-        band_values = read_and_display_tiff(file_path)[0].flatten()
+        band_values = read_and_display_tiff(file_path, print_metadata=False, plot=False, colormode=colormode)[0].flatten()
     
         # Append to the list
         all_band_values.append(band_values)
@@ -79,14 +79,14 @@ color_mode = 'greyscale'
 # checck one file
 image_dir = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/CMA/tif_{norm_type}_{color_mode}/'
 file_name = f'20130402_01:00_EXPATS_0_{norm_type}_{color_mode}.tif'
-band1 = read_and_display_tiff(image_dir+file_name, print_metadata=True)[0]
+band1 = read_and_display_tiff(image_dir+file_name, print_metadata=False, plot=False, colormode=color_mode)[0]
 print(band1)
 
-# # Open all crops
-# crop_list = sorted(glob(image_dir+'*tif'))
+# Open all crops
+crop_list = sorted(glob(image_dir+'*tif'))
 
 
-# bins =  np.arange(0, 255 + 2, 2)
+bins =  np.arange(0, 255 + 2, 2)
 
-# plot_distribution_of_crops(crop_list, bins, norm_type, image_dir )
+plot_distribution_of_crops(crop_list, bins, norm_type, image_dir, 'GS' )
 

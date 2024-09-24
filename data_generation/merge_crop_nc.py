@@ -16,8 +16,8 @@ msg_vars = ['IR_108']
 cmsaf_vars = ['cma']
 
 # Get list of crops
-list_msg_crops = sorted(glob(msg_dir + '*.nc'))[:100]
-list_cmsaf_crops = sorted(glob(cmsaf_dir + '*.nc'))[:100]
+list_msg_crops = sorted(glob(msg_dir + '*.nc'))
+list_cmsaf_crops = sorted(glob(cmsaf_dir + '*.nc'))
 
 # print length of lists
 len_msg = len(list_msg_crops)
@@ -100,3 +100,5 @@ if len_msg == len_msg:
 
 else:
     print('something wrong with the lists')
+
+#1242313 nohup

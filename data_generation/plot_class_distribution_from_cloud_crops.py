@@ -8,14 +8,15 @@ import random
 import numpy as np
 
 # Paths
-cloud_properties_path = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/nc_clouds/'
+cloud_properties_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc_clouds/'
 cloud_properties_crop_list = sorted(glob(cloud_properties_path + '*.nc'))
-labels_path = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/assignments_800ep.pt'
-output_path = '/data/sat/msg/ml_train_crops/IR_108_2013_128x128_EXPATS/'
+labels_path = '/home/dcorradi/Documents/Fig/10-90_corrected_norm_GS/assignments_GS_10th-90th.pt'
+output_path = '/home/dcorradi/Documents/Fig/10-90_corrected_norm_GS/'
 
-n_samples = len(cloud_properties_crop_list[:12000])
+n_samples = len(cloud_properties_crop_list)
 
 # Define the number of samples you want in the subsample
+# number of the closest points to the centroids
 n_subsample = 1000  # Change this to the desired number of subsamples
 
 # Ensure the subsample size is not larger than the available samples

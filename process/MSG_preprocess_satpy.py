@@ -370,10 +370,10 @@ if __name__ == "__main__":
     # Start time
     begin_time = time.time()
 
-    year = "2018"
-    month = "08" #use "*" if all months considered
-    begin_date = year+'.08.01'
-    end_date = year+'.09.01' #end point is excluded
+    year = "2016"
+    month = "09" #use "*" if all months considered
+    begin_date = year+'.09.01'
+    end_date = year+'.10.01' #end point is excluded
 
     timestamps = compute_timestamps_from_time_range(begin_date,end_date)   
     print(f'total number of timestamps in {begin_date}-{end_date}: {len(timestamps)}')

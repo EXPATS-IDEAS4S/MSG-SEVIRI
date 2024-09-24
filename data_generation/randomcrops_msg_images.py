@@ -47,7 +47,7 @@ cloud_prm = 'IR_108' #'cot', WV_062, IR_039
 
 cmap='Greys' #'Spectral_r' #Gray
 
-colormode = 'RGB'
+colormode = 'greyscale'
 
 x_pixel = 128
 y_pixel = 128
@@ -56,14 +56,14 @@ crops_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x12
 
 cma_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc_clouds/'
 
-apply_cma = True
+apply_cma = False
 
 out_dir = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/'
 
-crop_file_list = sorted(glob(crops_path+'*.nc'))[:100]
+crop_file_list = sorted(glob(crops_path+'*.nc'))
 print('total msg crops are - '+ str(len(crop_file_list)))
 
-cma_file_list = sorted(glob(cma_path+'*.nc'))[:100]
+cma_file_list = sorted(glob(cma_path+'*.nc'))
 print('total cma crops are - '+ str(len(cma_file_list)))
 
 if apply_cma and len(crop_file_list)!=len(cma_file_list):
@@ -113,3 +113,4 @@ end_time = time.time()
 
 elapsed_time = end_time - start_time
 print(f"Total execution time: {elapsed_time:.2f} seconds")            
+
