@@ -7,39 +7,89 @@ import xarray as xr
 import random
 import numpy as np
 
-# Paths
+run_name = '10th-90th'
+
+# Paths to CMSAF cloud properties crops
 cloud_properties_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc_clouds/'
-cloud_properties_crop_list = sorted(glob(cloud_properties_path + '*.nc'))
-labels_path = '/home/dcorradi/Documents/Fig/10-90_corrected_norm_GS/assignments_GS_10th-90th.pt'
-output_path = '/home/dcorradi/Documents/Fig/10-90_corrected_norm_GS/'
+cloud_properties_crop_list = sorted(glob(cloud_properties_path + '*.nc')) #crops are read in order by the ML model
 
+# Path to cluster assignments of crops
+labels_path = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/features/{run_name}/assignments_800ep.pt'
+
+# Path to cluster distances (from centroids)
+distances_path = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/features/{run_name}/distance_800ep.pt'
+
+# Path to fig folder for outputs
+output_path = f'/home/dcorradi/Documents/Fig/runs/{run_name}/'
+
+# Define sampling type
+sampling_type = 'closest'  # Options: 'random', 'closest', 'farthest', 'all'
+
+# Read data
 n_samples = len(cloud_properties_crop_list)
+n_subsample = 100  # Number of samples per cluster
+n_subsample = min(n_subsample, n_samples)  # Ensure it doesn't exceed available samples
 
-# Define the number of samples you want in the subsample
-# number of the closest points to the centroids
-n_subsample = 1000  # Change this to the desired number of subsamples
+assignments = torch.load(labels_path, map_location='cpu')  # Cluster labels for each sample
+distances = torch.load(distances_path, map_location='cpu')  # Distances to cluster centroids
 
-# Ensure the subsample size is not larger than the available samples
-n_subsample = min(n_subsample, n_samples)
+# Convert to numpy arrays for easier manipulation
+assignments = assignments[0].cpu().numpy()
+distances = distances[0].cpu().numpy()
 
-# Randomly select a subset of indices
-subsample_indices = random.sample(range(n_samples), n_subsample)
+# Get unique cluster labels
+unique_clusters = np.unique(assignments)
+print(unique_clusters)
 
-#subsample_indices = np.arange(n_subsample)
+# Prepare a list for subsample indices
+subsample_indices = []
 
-# Read the labels
-assignments = torch.load(labels_path, map_location='cpu')
+# Loop over each cluster and sample data
+for cluster in unique_clusters:
+    # Get indices for all samples in this cluster
+    cluster_indices = np.where(assignments == cluster)[0]
+    
+    # Get distances for the samples in this cluster
+    cluster_distances = distances[cluster_indices]
 
-# Create DataFrame for paths and labels using the subsample
+    # Determine subsample for this cluster based on sampling_type
+    if sampling_type == 'random':
+        # Randomly select indices from the current cluster
+        if len(cluster_indices) <= n_subsample:
+            selected_indices = cluster_indices
+        else:
+            selected_indices = np.random.choice(cluster_indices, n_subsample, replace=False)
+    
+    elif sampling_type == 'closest':
+        # Sort by distance (ascending) and select the closest ones
+        sorted_idx = np.argsort(cluster_distances)
+        selected_indices = cluster_indices[sorted_idx[:n_subsample]]
+    
+    elif sampling_type == 'farthest':
+        # Sort by distance (descending) and select the farthest ones
+        sorted_idx = np.argsort(cluster_distances)
+        selected_indices = cluster_indices[sorted_idx[-n_subsample:]]
+    
+    elif sampling_type == 'all':
+        # Use all the available data from this cluster (up to n_subsample if specified)
+        selected_indices = cluster_indices#[:n_subsample]
+    
+    else:
+        raise ValueError("Invalid sampling type. Choose from 'random', 'closest', 'farthest', or 'all'.")
+    
+    # Add selected indices to the subsample list
+    subsample_indices.extend(selected_indices)
+
+# Now, create the DataFrame with the selected subsamples
 df_labels = pd.DataFrame({
     'path': [cloud_properties_crop_list[i] for i in subsample_indices],
-    'label': [assignments[0].cpu()[i].item() for i in subsample_indices]
+    'label': [assignments[i] for i in subsample_indices]  # The labels of the subsamples
 })
-
-print(df_labels)
 
 # Filter out invalid labels (-100)
 df_labels = df_labels[df_labels['label'] != -100]
+
+print(df_labels)
 
 
 ##########################################################
@@ -51,7 +101,6 @@ cont_vars_long_name = ['cloud water path', 'cloud optical thickness', 'cloud top
 cont_vars_units = ['kg/m^2', '' , 'K', 'hPa', 'm', 'm']
 cont_vars_logscale = [False, False, False, False, False, False]
 cont_vars_dir = ['incr','incr', 'decr','decr','incr', 'incr']
-
 
 # Initialize lists to hold data for continuous and categorical variables
 continuous_data = {var: [] for var in continuous_vars}
@@ -109,7 +158,6 @@ for var, long_name, unit, direction, scale in zip(continuous_vars, cont_vars_lon
     fig.savefig(f'{output_path}{var}_boxplot_{n_subsample}.png', bbox_inches='tight')
     print(f'Figure saved: {output_path}{var}_boxplot_{n_subsample}.png')
 
-exit()
 
 ############################################################
 ## Compute stats and plot distr for Categorical variables ##

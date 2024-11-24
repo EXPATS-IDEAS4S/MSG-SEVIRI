@@ -7,41 +7,70 @@ import seaborn as sns
 import pandas as pd
 
 
-def plot_monthly_granular_distribution_from_csv(csv_file_path, output_folder):
+
+def plot_temporal_granular_distribution_from_csv(csv_file_path, output_folder, time_label, total_csv_file_path=None):
     """
-    Reads monthly granular counts from a CSV file and plots a histogram of the monthly distribution for 3x3 and 5x5 filters.
+    Reads monthly or hourly granular counts and total counts from CSV files, normalizes the counts, and plots a histogram 
+    of the normalized temporal distribution for 3x3 and 5x5 filters.
 
     Parameters:
-    - csv_file_path (str): Path to the CSV file containing the monthly granular point counts for 3x3 and 5x5 filters.
+    - csv_file_path (str): Path to the CSV file containing the granular point counts for 3x3 and 5x5 filters.
+    - total_csv_file_path (str): Path to the CSV file containing the total counts for normalization.
     - output_folder (str): Path to save the output plot.
+    - time_label (str): Label for the time dimension (e.g., 'Month', 'Hour').
     """
-    # Read CSV file into a DataFrame
-    df = pd.read_csv(csv_file_path)
+    # Read both CSV files
+    df_counts = pd.read_csv(csv_file_path, index_col=0).T  # Monthly counts, transposed
     
-    # Rename the columns if necessary (assuming '3x3' and '5x5' are the filter columns)
-    df.columns = ['Month', '3x3', '5x5']
+    # Reset index to make 'Month' a column in each DataFrame
+    df_counts = df_counts.reset_index().rename(columns={'index': time_label})
+
+    # If path to total counts CSV is provided, normalize the counts by the total counts
+    if total_csv_file_path:
+        df_totals = pd.read_csv(total_csv_file_path, index_col=0).T  # Total counts, transposed to match structure
+        df_totals = df_totals.reset_index().rename(columns={'index': time_label})
+        df_counts['5x5'] = df_counts['5x5'] / df_totals['5x5']
+        df_counts['3x3'] = df_counts['3x3'] / df_totals['3x3']
+
     
-    # Melt the DataFrame to have 'Month', 'Filter', and 'Count' columns for easy plotting
-    df_melted = df.melt(id_vars=['Month'], var_name='Filter', value_name='Count')
-    
-    # Convert Month to a categorical type with sorted order to ensure chronological display in the plot
-    df_melted['Month'] = pd.Categorical(df_melted['Month'], categories=sorted(df['Month'].unique()), ordered=True)
-    
-    # Initialize Seaborn barplot with Month on x-axis, Count on y-axis, and color by Filter
-    plt.figure(figsize=(12, 6))
-    sns.barplot(data=df_melted, x='Month', y='Count', hue='Filter', palette={'3x3': 'lightblue', '5x5': 'orange'})
+    # Reshape data to long format for plotting
+    df_long = pd.DataFrame({
+        time_label: pd.concat([df_counts[time_label], df_counts[time_label]], ignore_index=True),
+        'Filter': ['3x3'] * len(df_counts) + ['5x5'] * len(df_counts),
+        'Normalized Count': pd.concat([df_counts['3x3'], df_counts['5x5']], ignore_index=True)
+    })
+
+    # Ensure Month is treated as a categorical type for proper ordering in the plot
+    df_long[time_label] = pd.Categorical(df_long[time_label], categories=sorted(df_long[time_label].unique()), ordered=True)
+
+    # Plotting the normalized counts
+    if time_label=='Month':
+        figsize = (7, 4)
+    elif time_label=='Hour':
+        figsize = (9, 4)
+    plt.figure(figsize=figsize)
+    sns.barplot(data=df_long, x=time_label, y='Normalized Count', hue='Filter', palette={'3x3': 'lightblue', '5x5': 'orange'})
 
     # Customize plot aesthetics
-    plt.xticks(rotation=45)
-    plt.ylabel("Granular Point Count")
-    plt.xlabel("Month")
-    plt.title("Monthly Distribution of Granular Points by Filter")
-    plt.legend(title="Filter")
+    plt.xticks(rotation=45, fontsize=14)
+    plt.yticks(fontsize=14) 
+    plt.xlabel(time_label, fontsize=14)
+    if total_csv_file_path:
+        plt.ylabel("Normalized Count", fontsize=14)
+        filename_save_path = f'{output_folder}/normalized_cloud_mask_holes_distr_by_{time_label}.png'
+        plt.title(f"Normalized {time_label}ly Distribution of Granular Points", fontsize=15, fontweight='bold')
+    else:
+        plt.ylabel("Count", fontsize=14)
+        filename_save_path = f'{output_folder}/cloud_mask_holes_distr_by_{time_label}.png'
+        plt.title(f"{time_label}ly Distribution of Granular Points", fontsize=15, fontweight='bold')
+
+    # Position legend outside the plot on the right
+    plt.legend(title="Filter", title_fontsize='13', fontsize='11', loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
-    
+
     # Save plot
-    plt.savefig(f'{output_folder}/cloud_mask_holes_distr_by_month_seaborn.png')
-    #plt.show()
+    plt.savefig(filename_save_path)
+    # plt.show()  # Uncomment to display the plot
 
 
 def plot_monthly_granular_distribution(monthly_counts, output_folder):
@@ -93,7 +122,7 @@ def plot_normalized_histogram_from_csv(aggregated_counts_csv, total_points_csv, 
     df_total_points = pd.read_csv(total_points_csv, index_col=0)
 
     # Define categories
-    categories = df_aggregated_counts.columns.tolist()
+    #categories = df_aggregated_counts.columns.tolist()
     
     # Calculate normalized counts
     normalized_counts = pd.DataFrame({
@@ -105,15 +134,17 @@ def plot_normalized_histogram_from_csv(aggregated_counts_csv, total_points_csv, 
     normalized_counts = normalized_counts.rename(columns={'index': 'Elevation_Category'})
 
     # Plot with Seaborn
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(7, 4))
     sns.barplot(data=normalized_counts, x='Elevation_Category', y='Normalized_Count', hue='Filter', 
-                palette={'3x3': 'skyblue', '5x5': 'salmon'})
+                palette={'3x3': 'lightblue', '5x5': 'orange'})
 
     # Customize plot
-    plt.xlabel('Elevation Category')
-    plt.ylabel('Proportion of Granular Points')
-    plt.title('Normalized Granular Point Distribution by Elevation for 3x3 and 5x5 Filters')
-    plt.legend(title="Filter")
+    plt.xlabel('Elevation Category', fontsize=14)
+    plt.ylabel('Normalized Count',fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.title('Normalized Granular Point Distribution by Elevation', fontsize=15, fontweight='bold')
+    plt.legend(title="Filter", title_fontsize='13', fontsize='11', loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
     
     # Save the plot

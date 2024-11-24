@@ -36,21 +36,23 @@ import xarray as xr
 import os
 import glob
 import time
+import numpy as np
 
-from cropping_functions import crops_nc, filter_by_domain, filter_by_time
+from cropping_functions import crops_nc, filter_by_domain, filter_by_time, convert_crops_to_images
 
 start_time = time.time()
 
-years = ['2022']#,'2015','2016'] #1 year is 17568 samples
+year = '2022'
 
-month_start = '04' #April
-month_end = '09' #Septeber
+month = '09' #September
+
+days = ['14', '15', '16']
 
 hour_start = '00' #UTC (included)
 hour_end = '24' #UTC (not included, so if 18 it stop at 17.45, 24 will stop at 23.45 )
 
 # Define your range limits
-value_min = 200.0  # Example minimum value
+value_min = 180.0  # Example minimum value, extended to not exlude very cold OT (in training is 200K, check this!)
 value_max = 350.0   # Example maximum value
  
 #pixels for the random crops
@@ -59,47 +61,62 @@ value_max = 350.0   # Example maximum value
 #or I shold resample the data first
 x_pixel = 128 #528
 y_pixel = 128 #288
+grid_res = 0.04
 
-cloud_prm = ['IR_108','WV_062','IR_039'] #'cot', WV_062, IR_039
+cloud_prm = ['IR_108']#,'WV_062','IR_039'] #'cot', WV_062, IR_039
 
 #filter EXPATS domain to keep only Germany 
 #domain = lonmin, lonmax, latmin, latmax = 6, 16, 48, 52 #DC domain from the paper
-domain = lonmin, lonmax, latmin, latmax = 5, 16, 42, 51.5 #DC domain from the paper
-domain_name = 'EXPATS'
+#domain = lonmin, lonmax, latmin, latmax = 5, 16, 42, 51.5 #DC domain from the paper
+
+#define lower and left boundaries, from that you build the crop with fixed number of pixels
+lonmin = 10
+latmin = 42
+lonmax = np.round(lonmin + x_pixel*grid_res,2)
+latmax = np.round(latmin + y_pixel*grid_res,2)
+domain = lonmin, lonmax, latmin, latmax
+#using this crop setup, the domain covered should be lon:10-15°E and lat 42-47°N
+
+case_study_name = 'Marche_Flood_22'
 
 n_samples = 1
 
 # Join the elements of the lists with '-'
 cloud_prm_str = '-'.join(cloud_prm)
-years_str = '-'.join(years)
+years_str = '-'.join(year)
 
 #define output path
-output_path =  f'/work/dcorradi/crops/{cloud_prm_str}_{years_str}_{x_pixel}x{y_pixel}_{domain_name}/'
+output_path =  f'/work/dcorradi/crops/case_studies/{case_study_name}/'
+
+filename_part = f'{cloud_prm_str}_{x_pixel}x{y_pixel}'
 
 # Check if the directory exists
 if not os.path.exists(output_path+'nc/'):
     # Create the directory if it doesn't exist
     os.makedirs(output_path+'nc/')
 
-#loop over the years
-for year in years:
 
-    msg_path = f'/data/sat/msg/netcdf/parallax/{year}/'
 
-    #merge all msg file in nc format (they are organized in months folders)
-    msg_org_files = glob.glob(os.path.join(msg_path,"*/*.nc")) 
+msg_path = f'/data/sat/msg/netcdf/parallax/{year}/{month}/'
 
-    print('total files are - '+ str(len(msg_org_files)))
-   
-    #loop over the nc files containing the channel
-    for file in msg_org_files: 
-        #extract filename from path
-        filename = file.split('/')[-1] 
-        print(filename)
+#merge all msg file in nc format (they are organized in months folders)
+msg_org_files = glob.glob(os.path.join(msg_path,"*.nc")) 
+
+print('total files are - '+ str(len(msg_org_files)))
+
+#loop over the nc files containing the channel
+for file in msg_org_files: 
+    
+    #extract filename from path
+    filename = file.split('/')[-1] 
+  
+    day = filename.split('-')[0][6:8]
+    
+    
+    if day in days:
 
         #extract months from filename
-        month = filename.split('-')[0][4:6]
-        #print(month)
+        #month = filename.split('-')[0][4:6]  #print(month)
 
         #open daily dataset
         ds_day = xr.open_dataset(file)
@@ -131,7 +148,9 @@ for year in years:
             except ValueError as e:
                 print(f"Skipping file '{filename}-{timestamp}' due to error: {e}")
                 continue  # Skip this file and move to the next
-
+            
+            #print(ds_time)
+            #exit()
             # Check if the DataArray contains all NaN values
             #is_all_nan_ds = xr.DataArray.isnull(ds_time).all()
             #print(is_all_nan_ds)
@@ -144,13 +163,16 @@ for year in years:
             is_outside_range = any([((ds_time[var] < value_min) | (ds_time[var] > value_max)).any() for var in ds_time.data_vars])
 
             #if there are no Nan, the months is between April and September and time is before 17 UTC
-            if not is_all_nan_ds and not is_outside_range and month >= month_start and month <= month_end and hour >= hour_start and hour < hour_end:
-                print(timestamp)            
+            if not is_all_nan_ds and not is_outside_range and  hour >= hour_start and hour < hour_end:
+                #print(timestamp)            
 
                 # saving cropped images
-                filename_to_save = filename.split('-')[0]+'_'+str(timestamp).split('T')[1][0:5]+'_'+domain_name
-                print(filename_to_save)
-                crops_nc(ds_time, x_pixel, y_pixel, n_samples, filename_to_save, output_path)
+                filename_to_save = filename.split('-')[0]+'_'+str(timestamp).split('T')[1][0:5]
+                print(filename_part+'_'+filename_to_save)
+                
+                ds_time.to_netcdf(output_path+'nc/'+filename_part+'_'+filename_to_save+'.nc')
+                #convert_crop_to_images(ds_image, x_pixel, y_pixel, filename, format, out_path, cmap, vmin, vmax, norm_type, color_mode, apply_cma)
+        
 
 print('crops generation is done!')
             

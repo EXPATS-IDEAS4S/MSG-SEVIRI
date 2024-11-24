@@ -52,13 +52,13 @@ colormode = 'greyscale'
 x_pixel = 128
 y_pixel = 128
 
-crops_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc/'
+crops_path = '/work/dcorradi/crops/case_studies/Marche_Flood_22/nc/'
 
-cma_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc_clouds/'
+cma_path = '/work/dcorradi/crops/case_studies/Marche_Flood_22/nc_clouds/'
 
-apply_cma = False
+apply_cma = True
 
-out_dir = f'/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/'
+out_dir = f'/work/dcorradi/crops/case_studies/Marche_Flood_22/'
 
 crop_file_list = sorted(glob(crops_path+'*.nc'))
 print('total msg crops are - '+ str(len(crop_file_list)))
@@ -71,20 +71,24 @@ if apply_cma and len(crop_file_list)!=len(cma_file_list):
     exit()
 
 # Open the csv file with hte crops statistics
-crop_stat = os.path.join(out_dir, f'{cloud_prm}_statistics.csv')
-df = pd.read_csv(crop_stat)
+#crop_stat = os.path.join(out_dir, f'{cloud_prm}_statistics.csv')
 
 if apply_cma:
+    #crop_stat = os.path.join(out_dir, f'{cloud_prm}_statistics_CMA.csv')
     out_dir = out_dir+'CMA/'
+    
+
+
+#df = pd.read_csv(crop_stat)
 
 # Define the name of the normalization depending on the lower and upper bounds
-norm_types =  ['10th-90th'] #['Min-Max', '1th-99th', '5th-95th','25th-75th']
+norm_types =  ['200K-300K'] #['Min-Max', '1th-99th', '5th-95th','10th-90th','25th-75th']
 
 for norm_type in norm_types:
     print(norm_type)
     #get the right scaling
-    vmin = df.loc[df['Statistic'] == norm_type.split('-')[0], 'Value'].values[0]
-    vmax = df.loc[df['Statistic'] == norm_type.split('-')[1], 'Value'].values[0]
+    vmin = 200 #df.loc[df['Statistic'] == norm_type.split('-')[0], 'Value'].values[0]
+    vmax = 300 #df.loc[df['Statistic'] == norm_type.split('-')[1], 'Value'].values[0]
 
     #loop over the nc files containing the channel
     for msg_crop, cma_crop in zip(crop_file_list, cma_file_list): 
@@ -105,7 +109,7 @@ for norm_type in norm_types:
             msg_ds = msg_ds.where(cloud_mask == 1, vmax)
             
 
-        convert_crops_to_images(msg_ds, x_pixel, y_pixel, filename, image_format, out_dir, cmap, vmin, vmax, norm_type, colormode)
+        convert_crops_to_images(msg_ds, x_pixel, y_pixel, filename, image_format, out_dir, cmap, vmin, vmax, norm_type, colormode, apply_cma)
 
 print('crops conversion to images is done!')
             

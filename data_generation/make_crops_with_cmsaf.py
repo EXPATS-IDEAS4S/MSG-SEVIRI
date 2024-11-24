@@ -187,9 +187,9 @@ def save_nc(output_dir, crop_file, ds):
     
 
 # Define directories
-crop_directory = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc/' #70135?
+crop_directory = '/work/dcorradi/crops/case_studies/Marche_Flood_22/nc/' 
 cloud_directory = '/data/sat/msg/CM_SAF/merged_cloud_properties/'
-output_directory = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/nc_clouds/'
+output_directory = '/work/dcorradi/crops/case_studies/Marche_Flood_22/nc_clouds/'
 msg_directory = '/data/sat/msg/netcdf/parallax/'
 
 # Check if the directory exists
@@ -205,7 +205,7 @@ crops_list = sorted(glob(f'{crop_directory}*.nc'))
 clouds_list = []
 msg_list = []
 
-years = ['2013', '2014']
+years = ['2022']#, '2016']
 
 # Iterate over the years and gather the files for each year
 for year in years:
@@ -218,7 +218,7 @@ for year in years:
 #print("MSG List:", msg_list, len(msg_list)) #366
 
 
-cloud_vars = ['cph', 'cma', 'cwp', 'cot', 'ctt', 'ctp', 'cth', 'cre']
+cloud_vars = ['cph', 'cma', 'cot','ctp'] #'cwp', 'ctt', , 'cth', 'cre']
 #msg_vars = ['IR_108', 'WV_062', 'IR_039']
 
 # #loop over the crops
@@ -252,4 +252,4 @@ with ProcessPoolExecutor() as executor:
             print(f"Error processing {crop_file}: {e}")
 
 
-#nohup 191582
+#nohup 3741663

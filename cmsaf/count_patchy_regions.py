@@ -41,11 +41,31 @@ monthly_counts = {
     '5x5': defaultdict(int)
 }
 
+# Initialize cumulative counts by month
+hourly_counts = {
+    '3x3': defaultdict(int),
+    '5x5': defaultdict(int)
+}
+
+# Initialize cumulative counts by month
+monthly_counts_cloudy = {
+    '3x3': defaultdict(int),
+    '5x5': defaultdict(int)
+}
+
+# Initialize cumulative counts by month
+hourly_counts_cloudy = {
+    '3x3': defaultdict(int),
+    '5x5': defaultdict(int)
+}
+
 for filename in cma_filelist:
     print(f"Processing {filename}")
     # Load the data
     data = xr.open_dataset(filename)
     cloud_mask = data['cma'].values  # Assuming 'cma' is the variable for cloud mask
+
+    count_cloudy = np.sum(cloud_mask)
 
     lat = data['lat'].values
     lon = data['lon'].values
@@ -63,9 +83,14 @@ for filename in cma_filelist:
 
     # Extract date from filename
     date = ' '.join(os.path.basename(filename).split('/')[-1].split('_')[0:2])
+    #print(date)
 
-    #get the month
+    #get the month and hour from the date
     month = date[4:6]
+
+    #Extract the date from the date
+    hour = date.split(' ')[1].split(':')[0]
+    #print(hour)    
 
     #plot_cloud_mask(cloud_mask, closed_mask_3x3, closed_mask_5x5, granular_mask_3x3, granular_mask_5x5, num_features_3x3, num_features_5x5, date, lat, lon, output_folder)  
 
@@ -89,9 +114,39 @@ for filename in cma_filelist:
     monthly_counts['3x3'][month] += total_3x3
     monthly_counts['5x5'][month] += total_5x5
 
+    # Accumulate counts by hour
+    hourly_counts['3x3'][hour] += total_3x3
+    hourly_counts['5x5'][hour] += total_5x5
+
+    # Accumulate counts by month for cloudy areas
+    monthly_counts_cloudy['3x3'][month] += count_cloudy
+    monthly_counts_cloudy['5x5'][month] += count_cloudy 
+
+    # Accumulate counts by hour for cloudy areas
+    hourly_counts_cloudy['3x3'][hour] += count_cloudy
+    hourly_counts_cloudy['5x5'][hour] += count_cloudy
+
 print(aggregated_counts)
 print(total_points_by_category)
 print(monthly_counts)
+print(hourly_counts)
+print(monthly_counts_cloudy)
+print(hourly_counts_cloudy)
+
+# Convert hourly_counts to DataFrame, transpose for readability, and save as CSV
+df_hourly_counts_cloudy = pd.DataFrame(hourly_counts_cloudy).T
+df_hourly_counts_cloudy.index.name = 'Hour'
+df_hourly_counts_cloudy.reset_index().to_csv(f'{output_folder}hourly_counts_cloudy.csv', index=False)
+
+# Convert monthly_counts to DataFrame, transpose for readability, and save as CSV
+df_monthly_counts_cloudy = pd.DataFrame(monthly_counts_cloudy).T
+df_monthly_counts_cloudy.index.name = 'Month'
+df_monthly_counts_cloudy.reset_index().to_csv(f'{output_folder}monthly_counts_cloudy.csv', index=False)
+
+# Convert hourly_counts to DataFrame, transpose for readability, and save as CSV
+df_hourly_counts = pd.DataFrame(hourly_counts).T
+df_hourly_counts.index.name = 'Hour'
+df_hourly_counts.reset_index().to_csv(f'{output_folder}hourly_counts.csv', index=False)
 
 # Convert monthly_counts to DataFrame, transpose for readability, and save as CSV
 df_monthly_counts = pd.DataFrame(monthly_counts).T
@@ -110,12 +165,4 @@ df_total_points_by_category.reset_index().to_csv(f'{output_folder}total_points_b
 
 print("CSV files saved successfully.")
 
-# Plot normalized histogram after processing all files
-plot_normalized_histogram(aggregated_counts, total_points_by_category, output_folder)
-plot_monthly_granular_distribution(monthly_counts, output_folder) 
-
-#plot the normalized histogram from the csv file
-plot_normalized_histogram_from_csv('aggregated_counts.csv', 'total_points_by_category.csv', output_folder)
-plot_monthly_granular_distribution_from_csv('monthly_counts.csv', output_folder)
-
-#nohup 1362156    
+#nohup 1498551   

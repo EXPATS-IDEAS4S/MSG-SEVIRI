@@ -171,7 +171,7 @@ def create_fig(image, pixel_size, cmap, vmin=None, vmax=None, flip=True):
 
 
 
-def convert_crops_to_images(ds_image, x_pixel, y_pixel, filename, format, out_path, cmap, vmin, vmax, norm_type, color_mode):
+def convert_crops_to_images(ds_image, x_pixel, y_pixel, filename, format, out_path, cmap, vmin, vmax, norm_type, color_mode, apply_cma):
     """
     Generates a cropped image from the input dataset and saves it in the specified format.
 
@@ -232,6 +232,8 @@ def convert_crops_to_images(ds_image, x_pixel, y_pixel, filename, format, out_pa
         os.makedirs(out_dir) 
 
     crop_filepath = f'{out_dir}/{filename}_{norm_type}_{color_mode}.{format}'
+    if apply_cma:
+        crop_filepath = f'{out_dir}/{filename}_{norm_type}_{color_mode}_CMA.{format}'
 
     fig.savefig(crop_filepath, dpi=1)
 
