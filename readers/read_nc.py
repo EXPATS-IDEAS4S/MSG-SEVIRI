@@ -6,8 +6,8 @@ import numpy as np
 # Path to your NetCDF file
 #path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
 #nc_file = 'CTXin20210712000000405SVMSGI1UD.nc'
-path_to_files = "/data/sat/msg/orography/"
-nc_file = 'adaptor.mars.internal-1727169276.6659045-21410-8-f318c7b8-e965-4ae1-aaa3-b8fc8b702570.nc'
+path_to_files = "/home/dcorradi/Downloads/"
+nc_file = '99e0d52cefd9ce6fa084024b438b87c5.nc'
 ds = xr.open_dataset(path_to_files+nc_file)
 print(ds)
 #print(ds.lat.values, ds.lon.values)

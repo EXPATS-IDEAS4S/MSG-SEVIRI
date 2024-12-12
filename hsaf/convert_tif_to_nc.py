@@ -31,7 +31,7 @@ CATEGORY_LABELS = {
     233: "No Data",
     255: "Space"
 }
-def plot_dataset(dataset, time_index=0, title="Categorical Data Plot"):
+def plot_dataset(dataset, output_folder, time_index=0, title="Categorical Data Plot"):
     """
     Plots a categorical xarray dataset on a geographic map using cartopy.
 
@@ -44,12 +44,9 @@ def plot_dataset(dataset, time_index=0, title="Categorical Data Plot"):
     - None
     """
     # Extract data for the specified time step
-    if 'time' in dataset.dims:
-        data = dataset.isel(time=time_index)['value']
-        plot_time = str(dataset.time[time_index].values)
-    else:
-        data = dataset['value']
-        plot_time = "No time dimension"
+    plot_time = str(dataset.time.values).split('.')[0]
+    # extract snow cover values
+    data = dataset['value']
     
     # Set up the figure and the cartopy projection
     fig, ax = plt.subplots(
@@ -61,7 +58,10 @@ def plot_dataset(dataset, time_index=0, title="Categorical Data Plot"):
     # Add features: coastlines, borders, gridlines
     ax.coastlines()
     ax.add_feature(cfeature.BORDERS, linestyle=":")
-    ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
+    gl = ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
+
+    gl.right_labels = False  # Disable longitude labels on the right
+    gl.top_labels = False    # Disable latitude labels on the top
 
     # Set up a colormap and normalization based on category colors
     cmap = mcolors.ListedColormap([CATEGORY_COLORS[key] for key in CATEGORY_COLORS.keys()])
@@ -83,14 +83,18 @@ def plot_dataset(dataset, time_index=0, title="Categorical Data Plot"):
     ]
     ax.legend(handles=handles, title="Categories", loc="lower left", bbox_to_anchor=(1, 0))
 
-    plt.show()
+    fig.savefig(f'{output_folder}.png', bbox_inches="tight", dpi=300)
+    plt.close()
 
+
+year = '2014'
 
 # Set the path to the folder containing your .tif files
-tif_folder = "/data/sat/msg/H_SAF/H10_WGS84/2013/"
+tif_folder = f"/data/sat/msg/H_SAF/H10_WGS84/{year}/"
 list_of_files = sorted(glob(tif_folder + '*.tif'))
 
-output_nc_folder = '/data/sat/msg/H_SAF/H10_nc/2013/'  
+output_nc_folder = f'/data/sat/msg/H_SAF/H10_nc/{year}/' 
+output_fig_folder = '/data/sat/msg/H_SAF/H10_fig/'  
 os.makedirs(output_nc_folder, exist_ok=True)
 
 # Define target grid boundaries and step size
@@ -100,8 +104,8 @@ lat_step, lon_step = 0.04, 0.04
 # Create target latitude and longitude arrays
 target_lats = np.arange(lat_min, lat_max + lat_step, lat_step)
 target_lons = np.arange(lon_min, lon_max + lon_step, lon_step)
-print(target_lats.shape)
-print(target_lons.shape)
+#print(target_lats.shape)
+#print(target_lons.shape)
 
 # Define a function to extract date from filename (assuming it's encoded in the filename)
 def extract_date_from_filename(filename):
@@ -112,7 +116,7 @@ def extract_date_from_filename(filename):
     return datetime.strptime(date_str, "%Y%m%d")
 
 
-def convert_and_regrid_tif_to_nc(filename, tif_folder, output_nc_folder):
+def convert_and_regrid_tif_to_nc(filename, tif_folder, output_nc_folder, output_fig_folder):
     with rasterio.open(os.path.join(tif_folder, filename)) as src:
         # Check if CRS is WGS84 (EPSG:4326)
         if src.crs.to_string() != "EPSG:4326":
@@ -121,81 +125,34 @@ def convert_and_regrid_tif_to_nc(filename, tif_folder, output_nc_folder):
         
         # Read data and define original coordinates
         data = src.read(1)
-        print(data.shape)
+        #print(data.shape)
         transform = src.transform
         height, width = data.shape
         orig_lons = np.linspace(transform[2], transform[2] + transform[0] * width, width)
         orig_lats = np.linspace(transform[5], transform[5] + transform[4] * height, height)[::-1]
-        print(orig_lats.shape)
-        print(orig_lons.shape)
+        #print(orig_lats.shape)
+        #print(orig_lons.shape)
 
         # Create initial Dataset
         date_str = filename.split("_")[1].replace(".tif", "")
         date = datetime.strptime(date_str, "%Y%m%d")
-        da = xr.DataArray(data, dims=("y", "x"), coords={"lat": orig_lats, "lon": orig_lons, "time": date}, name="value")
+        da = xr.DataArray(np.flipud(data), dims=("lat", "lon"), coords={"lat": orig_lats, "lon": orig_lons, "time": date}, name="value")
         dataset = xr.Dataset({"value": da})
+        #print(dataset)
+        #exit()
 
         # Regrid to target grid using nearest-neighbor interpolation
         regridded_dataset = dataset.interp(lat=target_lats, lon=target_lons, method="nearest")
+        #print(regridded_dataset)
 
         # Save regridded dataset to a NetCDF file
         output_nc_path = os.path.join(output_nc_folder, f"{filename.replace('.tif', '.nc')}")
         regridded_dataset.to_netcdf(output_nc_path)
         print(f"Saved regridded dataset to {output_nc_path}")
-        plot_dataset(regridded_dataset, title="H10 Dataset Plot")
+        plot_dataset(regridded_dataset, output_fig_folder+filename.split('.')[0], title="H10 Product")
 
 # Process and regrid all .tif files in the folder
 for filename in sorted(os.listdir(tif_folder)):
     if filename.endswith(".tif"):
-        convert_and_regrid_tif_to_nc(filename, tif_folder, output_nc_folder)
-        exit()
-
-'''
-# Loop through all .tif files in the folder
-for tif_file in list_of_files:
-    print(f"Processing {tif_file}")
-
-    # Get the date for the time dimension
-    date = extract_date_from_filename(tif_file)
-    print(date)
-
-    # Open the .tif file with rasterio
-    with rasterio.open(tif_file) as src:
-        # Read the data as a 2D numpy array
-        data = src.read(1)
-        #print(src.crs)EPSG:4326
-        exit()
-            
-        # Get the latitude and longitude coordinates from the raster metadata
-        transform = src.transform
-        height, width = data.shape
-        
-        # Create row and column indices
-        rows, cols = np.meshgrid(np.arange(height), np.arange(width), indexing="ij")
-        
-        # Use rasterio's transform to get lat/lon for each pixel
-        lons, lats = rasterio.transform.xy(transform, rows, cols, offset="center")
-        lats = np.array(lats).reshape(data.shape)  # Ensure lat/lon are 2D arrays
-        lons = np.array(lons).reshape(data.shape)
-
-        # Create the Dataset with coordinates lat, lon, and time
-        da = xr.DataArray(
-            data,
-            dims=("y", "x"),  # Use "y" and "x" as dimension names
-            coords={
-                "lat": (("y", "x"), lats),
-                "lon": (("y", "x"), lons),
-                "time": date
-            },
-            name="category"
-        )
-        dataset = xr.Dataset({"value": da})
-        print(dataset)
-        plot_dataset(dataset, title="H10 Dataset Plot")
-        exit()
-
-        filename = os.path.basename(tif_file)
-        output_nc_path = os.path.join(output_nc_folder, f"{filename.replace('.tif', '.nc')}")
-        dataset.to_netcdf(output_nc_path)
-        print(f"Saved {output_nc_path}")
-'''
+        convert_and_regrid_tif_to_nc(filename, tif_folder, output_nc_folder, output_fig_folder)
+        #exit()
