@@ -24,13 +24,17 @@ import warnings
 #Import parameters from config file and custom methods
 from config_satpy_process import path_to_file, path_to_cth, natfile, cth_file, path_to_save
 from config_satpy_process import lonmin, lonmax, latmax, latmin, channels, step_deg, interp_method
-from config_satpy_process import parallax_correction, regular_grid
+from config_satpy_process import parallax_correction, regular_grid, msg_res
 from config_satpy_process import msg_reader, cth_reader
+from config_satpy_process import year, month
 from regrid_functions import regrid_data, fill_missing_data_with_interpolation, generate_regular_grid
+
+# get path of this file
+dir_path = os.path.dirname(os.path.abspath(__file__))
 
 # list of custom methods
 
-def compute_timestamps_from_time_range(start_date, end_date):
+def compute_timestamps_from_time_range(start_date, end_date, time_interval=15):
     """
     Compute a list of timestamps given the time range,
     considering a time interval of 15 minutes (4 files per hour, 96 files per day).
@@ -52,7 +56,7 @@ def compute_timestamps_from_time_range(start_date, end_date):
         # Generate timestamps at 15-minute intervals until the end date
         while current_time <= end:
             timestamps.append(current_time)
-            current_time += timedelta(minutes=15)
+            current_time += timedelta(minutes=time_interval)
         
         return timestamps
     
@@ -68,7 +72,7 @@ def check_filelist(filelist1, filelist2, name1, name2):
         return print(f'{name2} has more files, {len(filelist2)}')
     
 
-def get_datetime_msg(filename):
+def get_datetime_msg(filename, time_resolution=15):
     """
     get date and time from filename
     example filename: MSG4-SEVI-MSG15-0100-NA-20190401001243.703000000Z-NA.subset.nat
@@ -76,17 +80,15 @@ def get_datetime_msg(filename):
     #get start and end time from filename format yyyymmddhhmmss
     end_scan_time = filename.split('-')[5].split('.')[0]
     #print(end_scan_time)
-    min_str = end_scan_time[10:12]
+    end_min = int(end_scan_time[10:12])
     #print(min_str)
     #switch the minutes that indicate the end the scan to the minutes that indicate the 'rounded' start of the scan
-    if '00'<min_str<'15': min_str='00'
-    if '15'<min_str<'30': min_str='15' 
-    if '30'<min_str<'45': min_str='30'
-    if '45'<min_str<'59': min_str='45'
-    time_str = end_scan_time[0:10]+min_str
-    time_str = datetime.strptime(time_str, "%Y%m%d%H%M")
+    start_min = end_min - end_min % time_resolution
 
-    return time_str
+    start_time_str = f"{end_scan_time[0:10]}{start_min:02d}"
+    start_scan_time = datetime.strptime(start_time_str, "%Y%m%d%H%M")
+
+    return start_scan_time
 
 
 def get_datetime_cth(filename):
@@ -100,14 +102,14 @@ def get_datetime_cth(filename):
     return time_str
 
 
-def extract_timestamps(filenames, type):
+def extract_timestamps(filenames, type, msg_res=15):
     """
     Extracts and returns a list of timestamps from a list of filenames.
     """
     timestamps = []
     for filename in filenames:
         if type == 'msg':
-            timestamp = get_datetime_msg(filename.split('/')[-1])
+            timestamp = get_datetime_msg(filename.split('/')[-1], time_resolution=msg_res)
         elif type == 'cth':
             timestamp = get_datetime_cth(filename.split('/')[-1])
         else:
@@ -252,19 +254,14 @@ def compress_and_save(ds, proj_file_path, filename_save):
 
     #save the features using a similar name of the HDF5 file but in netCDF format
     #ds.to_netcdf(proj_file_path+filename_save)
+    encoding_dict = {}
+    for channel in channels:
+        encoding_dict[channel] = {"zlib": True, "complevel": 9}
+    encoding_dict['time'] = {"units": "seconds since 2000-01-01", "dtype": "i4"}
+
+    # Save the dataset with specified compression settings
     ds.to_netcdf(proj_file_path+filename_save, \
-        encoding={'IR_016':{"zlib":True, "complevel":9},\
-                'IR_039':{"zlib":True, "complevel":9},\
-                'IR_087':{"zlib":True, "complevel":9},\
-                'IR_097':{"zlib":True, "complevel":9},\
-                'IR_108':{"zlib":True, "complevel":9},\
-                'IR_120':{"zlib":True, "complevel":9},\
-                'IR_134':{"zlib":True, "complevel":9},\
-                'VIS006':{"zlib":True, "complevel":9},\
-                'VIS008':{"zlib":True, "complevel":9},\
-                'WV_062':{"zlib":True, "complevel":9},\
-                'WV_073':{"zlib":True, "complevel":9},\
-                'time':{"units": "seconds since 2000-01-01", "dtype": "i4"}})
+        encoding=encoding_dict)
     print('product saved\n')
 
 
@@ -367,14 +364,12 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore", message="You will likely lose important projection information when converting to a PROJ string from another format.")
     warnings.filterwarnings("ignore", message="Overlap checking not implemented. Waiting for fix for https://github.com/pytroll/pyresample/issues/329")
 
-    # Start time
+    # Start time script
     begin_time = time.time()
 
-    year = "2020"
-    month = "06" #use "*" if all months considered
-    begin_date = year+'.06.01'
-    end_date = year+'.07.01' #end point is excluded
-
+    #compute timestamps of the period
+    begin_date = f"{year}.{month:02d}.01"
+    end_date = f"{year}.{month+1:02d}.01" #end point is excluded. CAREFUL! this only works for months except december
     timestamps = compute_timestamps_from_time_range(begin_date,end_date)   
     print(f'total number of timestamps in {begin_date}-{end_date}: {len(timestamps)}')
 
@@ -387,7 +382,7 @@ if __name__ == "__main__":
     cth_fnames = sorted(glob(path_pattern_cth))
     
     #extract timestamps
-    msg_timestamps = extract_timestamps(fnames,'msg')
+    msg_timestamps = extract_timestamps(fnames,'msg', msg_res=msg_res)
     cth_timestamps = extract_timestamps(cth_fnames, 'cth')
 
     #TODO create a function that remore the timestamps of the file already converted
@@ -517,7 +512,7 @@ if __name__ == "__main__":
     # Calculate elapsed time
     elapsed_time = end_time - begin_time
     # Path to the text file where you want to save the elapsed time
-    output_file_path = '/home/dcorradi/Documents/Codes/MSG-SEVIRI/process/log/elapsed_time_satpy.txt'
+    output_file_path = dir_path + '/log/elapsed_time_satpy.txt'
 
     # Write elapsed time to the file
     with open(output_file_path, 'w') as file:
