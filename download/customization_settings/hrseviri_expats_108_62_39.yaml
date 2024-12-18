@@ -1,0 +1,14 @@
+product: HRSEVIRI
+format: 'msgnative'
+roi: 
+  NSWE:
+    - 52
+    - 42
+    - 5
+    - 16
+filter:
+  bands:
+    - channel_4
+    - channel_5
+    - channel_9
+  # channel_4: 3.9 um, channel_5: 6.2 um, channel_9: 10.8 um

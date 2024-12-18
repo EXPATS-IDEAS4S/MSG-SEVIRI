@@ -1,0 +1,8 @@
+product: HRSEVIRI
+format: 'msgnative'
+roi: 
+  NSWE:
+    - 52
+    - 42
+    - 5
+    - 16
