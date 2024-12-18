@@ -1,21 +1,54 @@
 import netCDF4 as nc
 import xarray as xr
 from glob import glob
+import numpy as np
 
 # Path to your NetCDF file
 #path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
 #nc_file = 'CTXin20210712000000405SVMSGI1UD.nc'
-path_to_files = "/net/yube/dcorradi/case_studies_expats/Germany_Flood_2021/data/MSG/MSGNATIVE/Parallax_Corrected/regrid/combination/"
-nc_file = 'MSG4-SEVI-MSG15-0100-NA-20210712144243_regular_grid.nc'
+path_to_files = "/home/dcorradi/Downloads/"
+nc_file = '99e0d52cefd9ce6fa084024b438b87c5.nc'
+ds = xr.open_dataset(path_to_files+nc_file)
+print(ds)
+#print(ds.lat.values, ds.lon.values)
+#print(ds.lons.values.flatten()[1000:])
+#print(ds.lats.values.flatten()[1000:])
+
+exit()
+
+# Define the bounding box for cropping (latmin, latmax, lonmin, lonmax)
+latmin, latmax = 42, 51.5
+lonmin, lonmax = 5, 16
+
+# Crop the dataset using sel() by specifying the latitude and longitude bounds
+cropped_ds = ds.sel(lat=slice(latmin-0.1, latmax+0.1), lon=slice(lonmin-0.1, lonmax+0.1))
+
+# Save the cropped dataset if necessary
+cropped_ds.to_netcdf("/data/sat/msg/orography/IMERG_landseamask_EXPATS_0.1x0.1.nc")
+
+# Print a summary of the cropped dataset to check
+print(cropped_ds)
+
+
+
 
 fnames = sorted(glob(path_to_files+nc_file))
 print(fnames)
 
-#ds = xr.open_dataset(path_to_files+nc_file)
-ds = xr.open_mfdataset(fnames, combine='nested', concat_dim='time', parallel=True)
+for file in fnames:
 
-print(ds.COT.values)
-
+    ds = xr.open_dataset(file)
+    #ds = xr.open_mfdataset(fnames, combine='nested', concat_dim='time', parallel=True)
+    print(ds.cma.values)
+#print(ds.cre.values)
+# print(ds.cot.values)
+# print(np.unique(ds.cph.values))
+# print(ds.cwp.values) #0,1,2 cloud free, liquid, ice
+# print(ds.ctt.values)
+# print(ds.ctp.values)
+# print(ds.cth.values)
+# print(np.unique(ds.cma.values)) #0, 1, clear, cloudy
+#print(ds.cma)
 
 
 

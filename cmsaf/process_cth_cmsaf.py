@@ -10,10 +10,10 @@ import os
 
 ### Define Paths ###
 
-year = '2020'
+year = '2014'
 
 #path where cth data are stored
-path_to_files = '/data/sat/msg/CM_SAF/CTH/'+year+'/0*/*/'
+path_to_files = '/data/sat/msg/CM_SAF/CTX/'+year+'/0*/*/'
 
 #Path output
 path_out = '/data/sat/msg/CM_SAF/CTH_processed/'+year+'/' 
@@ -21,7 +21,7 @@ path_out = '/data/sat/msg/CM_SAF/CTH_processed/'+year+'/'
 #open all files in directory 
 nc_file = "CTX*.nc" #'CTXin20210712000000405SVMSGI1UD.nc'
 fnames = sorted(glob(path_to_files+nc_file))
-#print(fnames)
+print(fnames)
 
 #Read and process CTH data at different temporal steps 
 for t,f in enumerate(fnames):

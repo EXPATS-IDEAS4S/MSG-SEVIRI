@@ -1,0 +1,16 @@
+# environments
+#.sat_enviroment
+
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+#nohup
+nohup.out
+
+#other codes
+other_codes/
+
+
+
+
