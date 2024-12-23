@@ -5,6 +5,9 @@ import numpy as np
 from scipy.spatial import cKDTree
 import seaborn as sns
 import pandas as pd
+import xarray as xr
+from glob import glob
+import os
 
 
 
@@ -349,3 +352,76 @@ def plot_cloud_mask(cloud_mask, closed_mask_3x3, closed_mask_5x5, granular_mask_
 
     # Save the plot
     fig.savefig(f'{output_folder}cloud_mask_{date}.png')
+
+
+
+def find_cma_file(cma_product_path, time_str):
+    """
+    Finds the corresponding CMA file based on the provided time string.
+
+    Args:
+        cma_product_path (str): Path to the directory containing CMA product files.
+        time_str (str): Time string in the format 'yyyy-mm-ddThh:mm', used to identify the matching CMA file.
+
+    Returns:
+        str: Path to the first matching CMA file found, or None if no matching file is found.
+    """
+
+    # Function to find the corresponding CMA file based on time
+    year, month, day, hh, mm = time_str[:4], time_str[5:7], time_str[8:10], time_str[11:13], time_str[14:16]
+    #print(f"Year: {year}, Month: {month}, Day: {day}, Hour: {hh}, Minute: {mm}")
+    folder_path = os.path.join(cma_product_path, year, month, day)
+    if not os.path.exists(folder_path):
+        print(f"Folder not found: {folder_path}")
+        return None
+
+    # Find the file with matching time
+    hhmm = hh + mm
+    file_pattern = f"CMAin{year}{month}{day}{hhmm}*.nc"
+    matching_files = glob(os.path.join(folder_path, file_pattern))
+    if matching_files:
+        return matching_files[0]
+    else:
+        print(f"No matching file found for {file_pattern}")
+        return None
+
+
+def extract_data(nc_file, cma_product_path):
+    """
+    Extracts the CMA dataset for the given crop dataset file based on matching latitude, 
+    longitude, and time information.
+
+    Args:
+        nc_file (str): Path to the crop dataset netCDF file.
+        cma_product_path (str): Path to the directory containing the CMA product files.
+
+    Returns:
+        xarray.Dataset: A subset of the CMA dataset corresponding to the latitude, longitude, 
+                        and time of the given crop dataset, or None if no matching CMA file is found.
+    """
+
+    # Open dataset of the crop and extract coordinates
+    ds = xr.open_dataset(nc_file)
+    time = ds.time.values
+    lat = ds.lat.values
+    lon = ds.lon.values
+    #print(f"Time: {time}")
+    #print(f"Lat: {lat.min()}, {lat.max()}")
+    #print(f"Lon: {lon.min()}, {lon.max()}")
+
+    # Find the corresponding CMA file      
+    cma_file = find_cma_file(cma_product_path, str(time))
+    print(f"CMA file: {cma_file}")
+    if cma_file:
+        cma_ds = xr.open_dataset(cma_file)
+        #print(cma_ds)
+
+        #Slice ds based on lat lon
+        cma_ds = cma_ds.sel(lat=lat, lon=lon, method='nearest')
+        #print(cma_ds)
+
+        return cma_ds
+    else:
+        print("No CMA file found")
+        return None
+      
