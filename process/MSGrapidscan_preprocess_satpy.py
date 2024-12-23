@@ -11,7 +11,6 @@ and regrid the data in a regular lat-lon grid
 TODO: check for missing timestamps once the daily dataset has been created
 TODO: better handle inizialization of dataset for native grid 
 """
-# %%
 import satpy 
 from glob import glob
 import xarray as xr
@@ -25,17 +24,17 @@ import warnings
 #Import parameters from config file and custom methods
 from config_satpy_process import path_to_file, path_to_cth, natfile, cth_file, path_to_save
 from config_satpy_process import lonmin, lonmax, latmax, latmin, channels, step_deg, interp_method
-from config_satpy_process import parallax_correction, regular_grid
+from config_satpy_process import parallax_correction, regular_grid, msg_res
 from config_satpy_process import msg_reader, cth_reader
+from config_satpy_process import year, month
 from regrid_functions import regrid_data, fill_missing_data_with_interpolation, generate_regular_grid
 
-# get path of current python file
-script_dir = os.path.dirname(os.path.abspath(__file__))
+# get path of this file
+dir_path = os.path.dirname(os.path.abspath(__file__))
 
-# %%
 # list of custom methods
 
-def compute_timestamps_from_time_range(start_date, end_date, time_resolution=15):
+def compute_timestamps_from_time_range(start_date, end_date, time_interval=15):
     """
     Compute a list of timestamps given the time range,
     considering a time interval of 15 minutes (4 files per hour, 96 files per day).
@@ -57,7 +56,7 @@ def compute_timestamps_from_time_range(start_date, end_date, time_resolution=15)
         # Generate timestamps at 15-minute intervals until the end date
         while current_time <= end:
             timestamps.append(current_time)
-            current_time += timedelta(minutes=time_resolution)
+            current_time += timedelta(minutes=time_interval)
         
         return timestamps
     
@@ -73,25 +72,23 @@ def check_filelist(filelist1, filelist2, name1, name2):
         return print(f'{name2} has more files, {len(filelist2)}')
     
 
-def get_datetime_msg(filename, time_res=15):
+def get_datetime_msg(filename, time_resolution=15):
     """
     get date and time from filename
     example filename: MSG4-SEVI-MSG15-0100-NA-20190401001243.703000000Z-NA.subset.nat
     """
-    #get end time from filename format yyyymmddhhmmss
+    #get start and end time from filename format yyyymmddhhmmss
     end_scan_time = filename.split('-')[5].split('.')[0]
-    end_scan_minutes = int(end_scan_time[10:12])
+    #print(end_scan_time)
+    end_min = int(end_scan_time[10:12])
+    #print(min_str)
+    #switch the minutes that indicate the end the scan to the minutes that indicate the 'rounded' start of the scan
+    start_min = end_min - end_min % time_resolution
 
-    # round down to closest scan start (depending on time resolution of MSG given by time_res)
-    start_scan_minutes = int(time_res * np.floor(end_scan_minutes/time_res))
+    start_time_str = f"{end_scan_time[0:10]}{start_min:02d}"
+    start_scan_time = datetime.strptime(start_time_str, "%Y%m%d%H%M")
 
-    # generate time string in correct format to convert to datetime
-    time_str = f"{end_scan_time[0:10]}{start_scan_minutes:02}"
-
-    # convert time string to datetime
-    time_str = datetime.strptime(time_str, "%Y%m%d%H%M")
-
-    return time_str
+    return start_scan_time
 
 
 def get_datetime_cth(filename):
@@ -105,14 +102,14 @@ def get_datetime_cth(filename):
     return time_str
 
 
-def extract_timestamps(filenames, type, time_res=15):
+def extract_timestamps(filenames, type, msg_res=15):
     """
     Extracts and returns a list of timestamps from a list of filenames.
     """
     timestamps = []
     for filename in filenames:
         if type == 'msg':
-            timestamp = get_datetime_msg(filename.split('/')[-1], time_res=time_res)
+            timestamp = get_datetime_msg(filename.split('/')[-1], time_resolution=msg_res)
         elif type == 'cth':
             timestamp = get_datetime_cth(filename.split('/')[-1])
         else:
@@ -190,7 +187,7 @@ def find_highest_index(lst, value):
 
 def find_common_timestamp_position(timestamp, list1, list2):
     """
-    Checks if a given timestamp is present in (both) provided lists and returns the highest positions
+    Checks if a given timestamp is present in both provided lists and returns the highest positions
     in each list if found. If the timestamp is not found in either list, returns None.
 
     Args:
@@ -203,10 +200,7 @@ def find_common_timestamp_position(timestamp, list1, list2):
     """
     try:
         pos1 = find_highest_index(list1, timestamp)  # Find the highest index in list1
-        try:
-            pos2 = find_highest_index(list2, timestamp)  # Find the highest index in list2
-        except ValueError:
-            pos2 = None
+        pos2 = find_highest_index(list2, timestamp)  # Find the highest index in list2
         return (pos1, pos2)
     except ValueError:
         # This block is executed if the timestamp is not found in either list
@@ -233,7 +227,7 @@ def open_satpy_scene(file_msg, file_cth, msg_reader, cth_reader, parallax):
                  By default, bad quality scan lines are masked and replaced with np.nan,
                  based on the quality flags provided by the data.
     """
-    if parallax and file_cth is not None:
+    if parallax:
         scn = satpy.Scene({msg_reader: [file_msg], cth_reader: [file_cth]})
     else:
         scn = satpy.Scene(reader=msg_reader, filenames=[file_msg])
@@ -260,19 +254,14 @@ def compress_and_save(ds, proj_file_path, filename_save):
 
     #save the features using a similar name of the HDF5 file but in netCDF format
     #ds.to_netcdf(proj_file_path+filename_save)
+    encoding_dict = {}
+    for channel in channels:
+        encoding_dict[channel] = {"zlib": True, "complevel": 9}
+    encoding_dict['time'] = {"units": "seconds since 2000-01-01", "dtype": "i4"}
+
+    # Save the dataset with specified compression settings
     ds.to_netcdf(proj_file_path+filename_save, \
-        encoding={'IR_016':{"zlib":True, "complevel":9},\
-                'IR_039':{"zlib":True, "complevel":9},\
-                'IR_087':{"zlib":True, "complevel":9},\
-                'IR_097':{"zlib":True, "complevel":9},\
-                'IR_108':{"zlib":True, "complevel":9},\
-                'IR_120':{"zlib":True, "complevel":9},\
-                'IR_134':{"zlib":True, "complevel":9},\
-                'VIS006':{"zlib":True, "complevel":9},\
-                'VIS008':{"zlib":True, "complevel":9},\
-                'WV_062':{"zlib":True, "complevel":9},\
-                'WV_073':{"zlib":True, "complevel":9},\
-                'time':{"units": "seconds since 2000-01-01", "dtype": "i4"}})
+        encoding=encoding_dict)
     print('product saved\n')
 
 
@@ -368,50 +357,32 @@ def get_filename_and_path(timestamp, parallax_correction, path_to_save):
     return proj_file_path, filename
 
 
-# %%
+
 if __name__ == "__main__":
 
     # Ignore specific warnings by message
     warnings.filterwarnings("ignore", message="You will likely lose important projection information when converting to a PROJ string from another format.")
     warnings.filterwarnings("ignore", message="Overlap checking not implemented. Waiting for fix for https://github.com/pytroll/pyresample/issues/329")
 
-    # Start time
+    # Start time script
     begin_time = time.time()
 
-    year = 2022
-    month = 6  # None if all months
-    day = 5  # None if all days
-    time_res = 5
-
-    if day is not None:
-        begin_date = f"{year}.{month:02}.{day:02}"
-        end_date = f"{year}.{month:02}.{day+1:02}" #end point is excluded
-    else:
-        if month is not None:
-            begin_date = f"{year}.{month:02}.01"
-            end_date = f"{year}.{month+1:02}.01" #end point is excluded
-        else:
-            begin_date = f"{year}.01.01"
-            end_date = f"{year+1}.01.01" #end point is excluded
-
-    print(begin_date, end_date)
-
-    timestamps = compute_timestamps_from_time_range(begin_date,end_date, 
-                                                    time_resolution=time_res) 
-    print(timestamps[-1])  
-
+    #compute timestamps of the period
+    begin_date = f"{year}.{month:02d}.01"
+    end_date = f"{year}.{month+1:02d}.01" #end point is excluded. CAREFUL! this only works for months except december
+    timestamps = compute_timestamps_from_time_range(begin_date,end_date)   
     print(f'total number of timestamps in {begin_date}-{end_date}: {len(timestamps)}')
 
     #open all MSG files in directory 
-    path_pattern = f"{path_to_file}{year}/{month:02}/{day:02}/{natfile}"
-    fnames = sorted(glob(path_pattern))  
+    path_pattern = f"{path_to_file}{year}/{month}/*/{natfile}"
+    fnames = sorted(glob(path_pattern))    
 
     #open all CTH files in directoy 
-    path_pattern_cth = f"{path_to_cth}{year}/{month:02}/{day:02}/{cth_file}"
+    path_pattern_cth = f"{path_to_cth}{year}/{month}/*/{cth_file}"
     cth_fnames = sorted(glob(path_pattern_cth))
     
     #extract timestamps
-    msg_timestamps = extract_timestamps(fnames,'msg', time_res=time_res)
+    msg_timestamps = extract_timestamps(fnames,'msg', msg_res=msg_res)
     cth_timestamps = extract_timestamps(cth_fnames, 'cth')
 
     #TODO create a function that remore the timestamps of the file already converted
@@ -440,20 +411,18 @@ if __name__ == "__main__":
 
         #create an empty dataset
         ds = create_dataset_with_lat_lon_dimensions(channels, lat_arr, lon_arr, regular_grid)
-        
+
         #add timestamp to dataset
         ds['time'] = [timestamp] 
 
         #check if cth and msg exist for the corresponding timestamp
-        positions = find_common_timestamp_position(timestamp,msg_timestamps,list2=cth_timestamps)
+        positions = find_common_timestamp_position(timestamp,msg_timestamps,cth_timestamps)
         
         if positions:
-            print(positions)
             file_msg = fnames[positions[0]]
-            print(file_msg)
-            file_cth = None if positions[1] is None else cth_fnames[positions[1]]
-            print(file_cth)
-
+            #print(file_msg)
+            file_cth = cth_fnames[positions[1]]
+            #print(file_cth)
             try:
                 scn = open_satpy_scene(file_msg,file_cth,msg_reader,cth_reader,parallax_correction)
             
@@ -542,13 +511,9 @@ if __name__ == "__main__":
 
     # Calculate elapsed time
     elapsed_time = end_time - begin_time
-
     # Path to the text file where you want to save the elapsed time
-    output_file_path = os.path.join(script_dir, 'log/elapsed_time_satpy.txt')
+    output_file_path = dir_path + '/log/elapsed_time_satpy.txt'
 
     # Write elapsed time to the file
     with open(output_file_path, 'w') as file:
         print(f"Elapsed time: {elapsed_time} seconds", file=file)
-    
-    
-# %%

@@ -6,7 +6,7 @@
 # where YYYYMMDDHHMMSS is a datetime string from which the day (DD) is extracted.
 #
 # Usage:
-# bash sort_files_by_day.sh /path/to/your/folder
+# bash organize_files.sh /path/to/your/folder
 #
 # Parameters:
 # $1 - The path to the directory containing files to be sorted.

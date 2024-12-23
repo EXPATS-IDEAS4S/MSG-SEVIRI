@@ -36,9 +36,9 @@ script_start_time=$(date +%s)
 ##### CONFIG PARAMETERS
 
 # Default values for START_TIME, END_TIME, and DOWNLOAD_DIR
-default_start_time="2019-08-01T00:00"
-default_end_time="2019-09-01T00:00"
-default_download_dir="/data/sat/msg/nat/2019/08/"
+default_start_time="2022-09-01T00:00"
+default_end_time="2022-09-01T00:10"
+default_download_dir="/data/sat/msg/rapid_scan/nat/2022/09/"
 
 ##### CONFIG PARAMETERS
 #######################
@@ -47,27 +47,26 @@ default_download_dir="/data/sat/msg/nat/2019/08/"
 START_TIME="${1:-$default_start_time}"
 END_TIME="${2:-$default_end_time}"
 DOWNLOAD_DIR="${3:-$default_download_dir}"
+# create download directory if it does not exist
+mkdir -p $DOWNLOAD_DIR
 
 # Absolute path this script is in.
 SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/"
 LOG_DIR="${SCRIPT_DIR}log/"
 
+# Define product details
+# PRODUCT="EO:EUM:DAT:MSG:HRSEVIRI" # standard msg files (15 mins res)
+PRODUCT="EO:EUM:DAT:MSG:MSG15-RSS" # high rate scans
+
+# define path to yaml file containing the customization chain
+CHAIN_FILE=${SCRIPT_DIR}"/customization_settings/hrseviri_expats_108_62_39.yaml"
+# CHAIN_FILE=${SCRIPT_DIR}"/customization_settings/hrseviri_expats.yaml"
+
+# print information on download settings
 echo "Using START_TIME: $START_TIME"
 echo "Using END_TIME: $END_TIME"
 echo "Downloading to: $DOWNLOAD_DIR"
-
-# Define product details
-PRODUCT="EO:EUM:DAT:MSG:HRSEVIRI" # standard msg files (15 mins res)
-PRODUCT_TAILOR="HRSEVIRI" #check if it's always the last part of PRODUCT
-#PRODUCT="EO:EUM:DAT:MSG:MSG15-RSS" # high rate scans
-FORMAT='msgnative' # 'hrit','netcdf4'
-
-#define roi by bounding box
-#ROI=[52, 42, 5, 16] #NSWE --> expats
-N=52 #north
-S=42 #south
-W=5 #west
-E=16 #east
+echo "Using customization chain from file: $CHAIN_FILE"
 
 # Number of files to process at a time
 batch_size=10
@@ -148,7 +147,12 @@ if [ -s "$PRODUCT_FILE" ]; then
         echo "Processing batch $batch:"
         
         # Download the products without saving output to a log file
-        eumdac download -c $PRODUCT -p @${LOG_DIR}temp_batch_files.txt --tailor 'product: '$PRODUCT_TAILOR', format: '$FORMAT', roi: {'NSWE':['$N', '$S', '$W', '$E']}' -o $DOWNLOAD_DIR -y
+        eumdac download -c $PRODUCT -p @${LOG_DIR}temp_batch_files.txt --chain $CHAIN_FILE -o $DOWNLOAD_DIR -y
+
+        # or via direct command line for downloading specific channels
+        # eumdac download -c $PRODUCT -p @${LOG_DIR}temp_batch_files.txt --tailor 'product: '$PRODUCT_TAILOR', format: '$FORMAT', roi: {'NSWE':['$N', '$S', '$W', '$E']}, filter: {'bands':'$CHANNELS'}' -o $DOWNLOAD_DIR -y
+        # for all channels
+        # eumdac download -c $PRODUCT -p @${LOG_DIR}temp_batch_files.txt --tailor 'product: '$PRODUCT_TAILOR', format: '$FORMAT', roi: {'NSWE':['$N', '$S', '$W', '$E']}' -o $DOWNLOAD_DIR -y
 
         #eumdac download -c $PRODUCT -p @temp_batch_files.txt --tailor 'product: HRSEVIRI, format: '$FORMAT', compression: zip' -o $DOWNLOAD_DIR -y 
         #eumdac download -c $PRODUCT --start $START_TIME --end $END_TIME --tailor 'product: HRSEVIRI, format: '$FORMAT', roi: {'NSWE':[52, 42, 5, 16]}' -o $DOWNLOAD_DIR -y
