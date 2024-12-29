@@ -26,6 +26,8 @@ nc_files = sorted(glob(os.path.join(cma_crops_path, "2013*.nc")))
 for nc_file in nc_files:
     cma_ds = extract_data(nc_file, cma_product_path)
     if cma_ds:
+        print(cma_ds)
+        exit()
         # Extract time from the file (assuming the time is in the file metadata or variable)
         file_time = cma_ds.time.values[0]
         print(file_time)

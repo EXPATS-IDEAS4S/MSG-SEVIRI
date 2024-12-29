@@ -55,6 +55,8 @@ for year in years:
     for cmsaf_file in cmsaf_files:
         # Open dataset for CMSAF
         ds_cmsaf = xr.open_dataset(cmsaf_file)
+        print(ds_cmsaf.conditions.flag_meanings)
+        exit()
 
         # Extract time and date
         time = ds_cmsaf.time.values[0]
