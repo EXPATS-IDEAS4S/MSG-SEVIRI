@@ -17,7 +17,9 @@ df = df.apply(pd.to_numeric, errors='ignore', downcast='integer')
 #     'status_flag': pd.Series(df['status_flag']).map(status_flag_mapping).dropna()
 # })
 
-print(df)
+#print number of roww with 3x3 structure
+print(df['structure'].value_counts())
+exit()
 
 
 def decode_flags_with_masks(value, flag_mapping):
