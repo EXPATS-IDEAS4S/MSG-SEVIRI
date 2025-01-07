@@ -14,6 +14,7 @@ filepattern = modis_cma_path + modis_filename
 
 filelist = sorted(glob(filepattern))
 print(f"Found {len(filelist)} files")
+
 for file_path in filelist:
     print(f"Processing file: {file_path}")
 
