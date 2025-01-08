@@ -4,8 +4,8 @@
 geocoder_dir='/home/dcorradi/Documents/Codes/MSG-SEVIRI/hsaf/hsaf-snow-geocoder'
 
 # Define the input and output directories
-input_dir="/data/sat/msg/H_SAF/H10/2014"
-output_dir="/data/sat/msg/H_SAF/H10_WGS84/2014"
+input_dir="/data/sat/msg/H_SAF/H10/2016"
+output_dir="/data/sat/msg/H_SAF/H10_WGS84/2016"
 
 # Change to the geocoder directory
 cd "$geocoder_dir" || { echo "Failed to change directory to $geocoder_dir"; exit 1; }
