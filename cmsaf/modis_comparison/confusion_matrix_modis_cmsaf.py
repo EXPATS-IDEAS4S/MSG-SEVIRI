@@ -9,6 +9,7 @@ import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
 from scipy.interpolate import griddata
 from datetime import datetime, timedelta
+import os
 
 # Define paths
 cmsaf_folder = "/data1/crops/cmsaf_2013-2014-2015-2016_expats/nc_clouds/"
@@ -147,21 +148,34 @@ for modis_file in modis_files:
     with xr.open_dataset(modis_file) as modis_ds:
         modis_start_time = pd.to_datetime(modis_ds.attrs["time_coverage_start"]).tz_localize(None)
         modis_end_time = pd.to_datetime(modis_ds.attrs["time_coverage_end"]).tz_localize(None)
-        print('MODIS scan times: ',modis_start_time, modis_end_time)
+        print('MODIS scan times: ', modis_start_time, modis_end_time)
 
     # Find the closest CMSAF file based on MODIS time
     cmsaf_match = None
     for cmsaf_file in cmsaf_files:
-        cmsaf_time_info = cmsaf_file.split("/")[-1].split("_")[1]  # Extract 'hh:MM'
-        cmsaf_start_time = datetime.strptime(f"{modis_start_time.year}{modis_start_time.month:02}{modis_start_time.day:02}T{cmsaf_time_info}", "%Y%m%dT%H:%M")
-        cmsaf_end_time = cmsaf_start_time + timedelta(minutes=15)
-        #print('CMSAF scan times: ',cmsaf_start_time, cmsaf_end_time)
+        cmsaf_filename = os.path.basename(cmsaf_file)
+        cmsaf_date_info = cmsaf_filename.split("_")[0]  # Extract '20130401'
+        cmsaf_time_info = cmsaf_filename.split("_")[1]  # Extract '00:00'
+        #print(cmsaf_date_info, cmsaf_time_info)
 
+        # Combine date and time to create a datetime object
+        try:
+            cmsaf_start_time = datetime.strptime(f"{cmsaf_date_info}T{cmsaf_time_info}", "%Y%m%dT%H:%M")
+            cmsaf_end_time = cmsaf_start_time + timedelta(minutes=15)
+        except ValueError as e:
+            print(f"Error parsing CMSAF file time from {cmsaf_filename}: {e}")
+            continue
+
+        print(f'CMSAF scan times: {cmsaf_start_time} to {cmsaf_end_time}')
+
+        # Check if MODIS scan times fall within CMSAF scan window
         if cmsaf_start_time <= modis_start_time and modis_end_time <= cmsaf_end_time:
             cmsaf_match = cmsaf_file
+            print(f"Matching CMSAF file found: {cmsaf_match}")
             break
 
     if not cmsaf_match:
+        print(f"No matching CMSAF file found for MODIS file: {modis_file}")
         continue
 
     # Process the matched CMSAF file
@@ -367,4 +381,4 @@ for modis_file in modis_files:
 results_df = pd.DataFrame(results)
 results_df.to_csv(f"{output_path}confusion_matrix_results.csv", index=False)
 
-#nohup 2278984
+#nohup 2289010

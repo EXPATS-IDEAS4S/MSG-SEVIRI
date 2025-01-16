@@ -134,6 +134,7 @@ for structure_size in closing_strucutre_sizes:
                     
 
                     # Count the number of cloudy/probably cloudy pixels
+                    # TODO maybe only include cloudy and not probably cloudy pixels
                     cloudy_count = np.sum((neighbor_cloud_mask_values == 0 |
                                         (neighbor_cloud_mask_values == 1)
                                         ))
