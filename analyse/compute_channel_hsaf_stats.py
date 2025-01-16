@@ -61,6 +61,9 @@ def process_file(msg_file, hsaf_file):
     try:
         with xr.open_dataset(msg_file) as ds_msg, xr.open_dataset(hsaf_file) as ds_hsaf:
             # Extract the channel data
+            print(ds_msg)
+            print(ds_hsaf)  
+            exit()
 
             channel_data = ds_msg[channel]
             lat_msg, lon_msg = ds_msg["lat"].values, ds_msg["lon"].values
@@ -112,6 +115,9 @@ def process_year_month(year, month):
     """Process all MSG files for a given year and month with corresponding HSAF files."""
     msg_dir = os.path.join(base_dir, str(year), f"{month:02d}")
     hsaf_dir_month = os.path.join(hsaf_dir, str(year), f"{month:02d}")
+    print(msg_dir)
+    print(hsaf_dir_month)
+
     if not os.path.exists(msg_dir) or not os.path.exists(hsaf_dir_month):
         print(f"Skipping year {year}, month {month}: Missing data directory.")
         return []
@@ -121,11 +127,15 @@ def process_year_month(year, month):
     # Get MSG and HSAF files
     msg_files = sorted(glob.glob(os.path.join(msg_dir, "*.nc")))
     hsaf_files = sorted(glob.glob(os.path.join(hsaf_dir_month, "*.nc")))
+    print(len(msg_files))
+    print(len(hsaf_files))
 
     # Process MSG-HSAF pairs
     for msg_file in tqdm(msg_files, desc=f"Processing {year}-{month:02d}"):
         # Find the corresponding HSAF file (same date)
         msg_date = os.path.basename(msg_file).split("_")[1]  # Adjust based on naming convention
+        print(msg_date)
+        exit()
         hsaf_file = next((f for f in hsaf_files if msg_date in os.path.basename(f)), None)
         if not hsaf_file:
             print(f"No matching HSAF file found for {msg_file}")
