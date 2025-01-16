@@ -29,6 +29,8 @@ for file_path in filelist:
     # Open the cloud mask and geolocation data
     cloud_mask_ds = xr.open_dataset(file_path, group="geophysical_data")
     geo_ds = xr.open_dataset(file_path, group="geolocation_data")
+    print(geo_ds)
+    exit()
     #ds_scan_line = xr.open_dataset(file_path, group="scan_line_attributes")
 
     # Extract data

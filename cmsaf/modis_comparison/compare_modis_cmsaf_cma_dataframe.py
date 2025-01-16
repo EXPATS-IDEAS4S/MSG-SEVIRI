@@ -13,7 +13,9 @@ modis_files = sorted(glob.glob(f"{modis_folder}CLDMSK_L2_MODIS_Aqua*.nc"))
 
 output_path = "/home/Daniele/fig/cma_analysis/modis/"
 
-closing_strucutre_sizes = [15, 20, 25, 30, 35, 40, 45, 50]
+closing_strucutre_sizes = [2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+#0 = cloudy, 1= probably cloudy, 2 = probably clear, 3 = confident clear, -1 = no result)
+
 
 # Define spatial domain
 #lon_min, lon_max = 5, 16
@@ -78,7 +80,7 @@ for structure_size in closing_strucutre_sizes:
         lon_min, lon_max = cmsaf_lon.min(), cmsaf_lon.max()
 
         # Determine the MODIS file with the highest spatial coverage in the domain
-        max_coverage = -1
+        max_coverage = 0 # change that to include sort of threshold on the overpass
         best_modis_file = None
 
         # Open geolocation data from MODIS file
@@ -110,32 +112,67 @@ for structure_size in closing_strucutre_sizes:
                     # Find the nearest MODIS pixel by finding the minimum absolute distance in both lat and lon
                     lat_point = lat_grid[lat_idx, lon_idx]
                     lon_point = lon_grid[lat_idx, lon_idx]
-                    #print(lat_point, lon_point)
-                    # Compute the squared distance for all points in the grid
-                    distance = (latitude - lat_point) ** 2 + (longitude - lon_point) ** 2
 
-                    #Find the minimum distance (square root of the sum of the squares)
-                    min_distance = np.min(np.sqrt(distance))
-                    #print(min_distance)
+                    # Define the bounding box for MODIS pixels (±0.02 degrees)
+                    lat_min, lat_max = lat_point - 0.02, lat_point + 0.02
+                    lon_min, lon_max = lon_point - 0.02, lon_point + 0.02
+
+                    # Find MODIS pixels within the bounding box
+                    neighbor_mask = (
+                        (latitude >= lat_min) & (latitude <= lat_max) &
+                        (longitude >= lon_min) & (longitude <= lon_max)
+                    )
+                    neighbor_indices = np.where(neighbor_mask)
+
+                    # Check if any MODIS pixels are found
+                    if len(neighbor_indices[0]) == 0:
+                        # No neighboring pixels found
+                        continue
+
+                    # Get cloud mask values for the neighboring MODIS pixels
+                    neighbor_cloud_mask_values = cloud_mask[neighbor_indices]
+                    
+
+                    # Count the number of cloudy/probably cloudy pixels
+                    cloudy_count = np.sum((neighbor_cloud_mask_values == 0 |
+                                        (neighbor_cloud_mask_values == 1)
+                                        ))
+
+                    # Determine the total number of neighboring pixels
+                    total_neighbors = len(neighbor_cloud_mask_values)
+
+                    # Determine if the hole is cloudy or clear (TODO change the threshold?)
+                    #hole_status = "cloudy" if cloudy_count > total_neighbors / 2 else "clear"
+                    hole_status = "cloudy" if cloudy_count > 0 else "clear"
+
+                    # #print(lat_point, lon_point)
+                    # # Compute the squared distance for all points in the grid
+                    # distance = (latitude - lat_point) ** 2 + (longitude - lon_point) ** 2
+
+                    # #Find the minimum distance (square root of the sum of the squares)
+                    # min_distance = np.min(np.sqrt(distance))
+                    # #print(min_distance)
                 
-                    if min_distance<0.04:
-                        # Find the index of the minimum distance
-                        min_index = np.unravel_index(np.argmin(distance), distance.shape)
+                    # if min_distance<0.04:
+                    #     # Find the index of the minimum distance
+                    #     min_index = np.unravel_index(np.argmin(distance), distance.shape)
 
-                        # Output the index and corresponding grid point
-                        closest_lat = latitude[min_index]
-                        closest_lon = longitude[min_index]
-                        cloud_mask_value = cloud_mask[min_index] 
-                    else:
-                        #print('No MODIS pixel found')
-                        continue   
+                    #     # Output the index and corresponding grid point
+                    #     closest_lat = latitude[min_index]
+                    #     closest_lon = longitude[min_index]
+                    #     cloud_mask_value = cloud_mask[min_index] 
+                    # else:
+                    #     #print('No MODIS pixel found')
+                    #     continue   
 
                     # Append the result including the condition, MODIS value, lat, lon, and scan times
                     results.append({
                         "Condition": condition_label,
-                        "MODIS Value": cloud_mask_value,
-                        "MODIS Lat": closest_lat,
-                        "MODIS Lon": closest_lon,
+                        "MODIS Value": hole_status,
+                        #"MODIS Lat": closest_lat,
+                        #"MODIS Lon": closest_lon,
+                        "Cloudy Pixels": cloudy_count,
+                        "Total Pixels": total_neighbors,
                         "CMSAF Lat": lat_point,
                         "CMSAF Lon": lon_point,
                         "CMSAF Start Time": cmsaf_start_time,
@@ -143,7 +180,7 @@ for structure_size in closing_strucutre_sizes:
                         "MODIS Start Time": modis_start_time,
                         "MODIS End Time": modis_end_time
                     })
-            
+
             # Apply closing
             holes_nxn = apply_closing(mask, structure_size)
 
@@ -160,6 +197,6 @@ for structure_size in closing_strucutre_sizes:
     results_df = pd.DataFrame(results)
     print(results_df)
     #save dataframe to csv
-    results_df.to_csv(f"{output_path}modis_cma_comparison_{structure_size}.csv")	
+    results_df.to_csv(f"{output_path}modis_cma_comparison_neighbor_{structure_size}.csv")	
 
-#hohup   2126597
+#hohup 2236532
