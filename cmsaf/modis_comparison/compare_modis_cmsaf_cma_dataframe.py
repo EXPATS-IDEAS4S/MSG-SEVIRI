@@ -13,7 +13,7 @@ modis_files = sorted(glob.glob(f"{modis_folder}CLDMSK_L2_MODIS_Aqua*.nc"))
 
 output_path = "/home/Daniele/fig/cma_analysis/modis/"
 
-closing_strucutre_sizes = [2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+closing_strucutre_sizes = [2,3,4,5,6,7,8,9,10]
 #0 = cloudy, 1= probably cloudy, 2 = probably clear, 3 = confident clear, -1 = no result)
 
 
@@ -145,6 +145,7 @@ for structure_size in closing_strucutre_sizes:
                     # Determine if the hole is cloudy or clear (TODO change the threshold?)
                     #hole_status = "cloudy" if cloudy_count > total_neighbors / 2 else "clear"
                     hole_status = "cloudy" if cloudy_count > 0 else "clear"
+                    #hole_cloudiness_ratio = cloudy_count / total_neighbors
 
                     # #print(lat_point, lon_point)
                     # # Compute the squared distance for all points in the grid
