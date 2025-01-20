@@ -14,8 +14,8 @@ sys.path.append('/home/dcorradi/Documents/Codes/MSG-SEVIRI/')
 from process.regrid_functions import regrid_data, generate_regular_grid
 
 #Year of data
-years = ['2013', '2014']
-variable_names = ['cma', 'quality', 'status_flag', 'conditions']
+years = ['2013']
+variable_names = ['ctp'] #['cma', 'quality', 'status_flag', 'conditions']
 
 # Define extent of domain of interest
 lonmax, lonmin, latmax, latmin = 16., 5., 51.5, 42.
@@ -37,8 +37,8 @@ def get_cmsaf_lat_lon(ds_cmsaf, ds_aux):
 
 for year in years:
     # Define the folder of the CMSAF file to regrid
-    cmsaf_folder = "/data/sat/msg/CM_SAF/CMA/"+year+"/*/*/"
-    cmsaf_filepattern = "CMAin*.nc"
+    cmsaf_folder = "/data/sat/msg/CM_SAF/CTX/"+year+"/*/*/"
+    cmsaf_filepattern = "CTXin*.nc"
     cmsaf_aux_path = "/data/sat/msg/CM_SAF/CMA/"+year+"/CM_SAF_CLAAS3_L2_AUX.nc"
     
     # Define path for saving the processed CM SAF file
@@ -56,7 +56,6 @@ for year in years:
         # Open dataset for CMSAF
         ds_cmsaf = xr.open_dataset(cmsaf_file)
         print(ds_cmsaf.conditions.flag_meanings)
-        exit()
 
         # Extract time and date
         time = ds_cmsaf.time.values[0]
@@ -79,6 +78,19 @@ for year in years:
                 
                 # Extract variable data
                 var_data = ds_cmsaf[var_name].values[0, :, :]
+
+                if var_name == 'ctp':
+                    print(var_data)
+                    # Plot the data before the regridding, usinf cartopy
+                    print(lon_aux.shape, lat_aux.shape, var_data.shape)
+                    import matplotlib.pyplot as plt
+                    import cartopy.crs as ccrs
+                    fig, ax = plt.subplots(1,1, figsize=(8, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+                    plt.pcolormesh(lon_aux.squeeze(), lat_aux.squeeze(), var_data, transform=ccrs.PlateCarree(),  cmap='Greys_r')
+                    ax.coastlines()
+                    plt.savefig(f'/home/dcorradi/Documents/Fig/cma/CTP_before_regrid_{time}.png')
+                    plt.close()
+                    exit()
                 
                 # Regrid the data
                 regridded_data = regrid_data(lat_aux, lon_aux, var_data, msg_lat_grid, msg_lon_grid, 'nearest')

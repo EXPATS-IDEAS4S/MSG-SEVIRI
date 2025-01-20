@@ -98,8 +98,9 @@ import matplotlib.pyplot as plt
 import seaborn
 
 #open the saved csv file
+output_path = "/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/CMA/filling_cma_figs/"
 final_df = pd.read_csv(output_path + 'output_snow_cover_by_structure.csv')
-print(final_df)
+#print(final_df)
 
 # Normalize counts
 normalized_df = (
@@ -112,14 +113,77 @@ normalized_df['normalized_count'] = (
     normalized_df['count'] / normalized_df.groupby('structure')['count'].transform('sum')
 )
 
+# Select normalized_df onl with structure 3x3
+normalized_df = normalized_df[normalized_df['structure'] == '3x3']
+
+#Change the structure column to True
+normalized_df['structure'] = 'Yes'
+print(normalized_df)
+
+
+# Open hsaf dataset
+folder_path = "/data/sat/msg/H_SAF/H10_nc/2013/"
+
+#get list of filename
+hsaf_files = sorted(glob(folder_path+'*/*.nc'))
+print(len(hsaf_files))
+
+#open dataset usinf xarray
+# Open and merge files along the time dimension
+merged_data = xr.open_mfdataset(
+        hsaf_files, 
+        combine='nested', 
+        concat_dim='time', 
+        parallel=True     
+    )
+print(merged_data)
+
+# Access the 'value' data array
+values = merged_data['value']
+
+# Initialize a dictionary to store counts and norm counts for each category
+category_counts = {label: 0 for label in CATEGORY_LABELS.values()}
+print(category_counts)
+
+# Compute the counts for each category
+total_points = values.size
+print(total_points)
+for code, label in CATEGORY_LABELS.items():
+    # Count occurrences and compute it
+    count = (values == code).sum().compute().item()  # Count occurrences of the category
+    category_counts[label] = count   # Normalize by total points
+    #category_norm_counts[label] = count / total_points  # Normalize by total points
+
+# Create a DataFrame from the results
+df = pd.DataFrame.from_dict(category_counts, orient='index', columns=['count'])
+df.reset_index(inplace=True)
+df.rename(columns={'index': 'snow_cover'}, inplace=True)
+df['normalized_count'] = df['count'] / total_points
+
+# Delete rows with 0 counts
+df = df[df['count'] > 0]
+
+# Add a column called 'structure' to the final_df with all values as False
+df['structure'] = 'No'
+
+# Display the resulting DataFrame
+print(df)
+
+#Concate the two dataframes
+final_df = pd.concat([normalized_df, df], ignore_index=True)
+#change the column name 'structure' to 'closing_algorithm'
+final_df.rename(columns={'structure': 'closed_pixels'}, inplace=True)
+print(final_df)
+
 # Plot the distribution of snow cover categories
-fig, ax = plt.subplots(figsize=(10, 5))
-seaborn.barplot(data=normalized_df, x='snow_cover',y='normalized_count', hue='structure', ax=ax)
+fig, ax = plt.subplots(figsize=(6, 3))
+seaborn.barplot(data=final_df, x='snow_cover',y='normalized_count', hue='closed_pixels', ax=ax)
 plt.xlabel("HSAF Category", fontsize=12)
 plt.ylabel("Normalized Count", fontsize=12)
 plt.xticks(rotation=45, ha='right', fontsize=12)
 plt.yticks(fontsize=12)
-plt.title("HSAF category for the closed pixels", fontsize=14, fontweight='bold')
+plt.legend(title='Closed Pixels', fontsize=12)
+plt.title("HSAF category for the closed pixels", fontsize=12, fontweight='bold')
 fig.savefig(f'{output_path}snow_cover_category_distribution.png', bbox_inches='tight')
 
 

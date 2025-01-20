@@ -9,7 +9,12 @@ output_path = "/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x1
 df = pd.read_csv(f'{output_path}cloud_mask_closed_points_flags.csv')
 
 df = df.apply(pd.to_numeric, errors='ignore', downcast='integer')
-
+#print(df['structure'].value_counts())
+#select only rows with structure 3x3
+df = df[df['structure'] == '3x3']
+tot_rows = len(df)
+print(tot_rows)
+print(df)
 # # Convert data to pandas DataFrame for plotting
 # df = pd.DataFrame({
 #     'quality': pd.Series(df['quality']).map(quality_mapping).dropna(),
@@ -17,9 +22,6 @@ df = df.apply(pd.to_numeric, errors='ignore', downcast='integer')
 #     'status_flag': pd.Series(df['status_flag']).map(status_flag_mapping).dropna()
 # })
 
-#print number of roww with 3x3 structure
-print(df['structure'].value_counts())
-exit()
 
 
 def decode_flags_with_masks(value, flag_mapping):
@@ -46,6 +48,8 @@ print(df[['status_flag', 'decoded_status_flag']])
 print(df[['quality', 'decoded_quality']])
 print(df[['conditions', 'decoded_conditions']])
 
+# Plot how many rows have empty status_flag
+print(df['decoded_status_flag'].value_counts())
 
 # Split the decoded columns into individual items and count occurrences
 from collections import Counter
@@ -57,27 +61,41 @@ def count_items(column):
 quality_counts = count_items(df['decoded_quality'])
 conditions_counts = count_items(df['decoded_conditions'])
 status_flag_counts = count_items(df['decoded_status_flag'])
+print(quality_counts)
+print(conditions_counts)
+print(status_flag_counts)
 
 # Convert counts to DataFrame for plotting
 quality_df = pd.DataFrame(quality_counts.items(), columns=['quality', 'count'])
 conditions_df = pd.DataFrame(conditions_counts.items(), columns=['conditions', 'count'])
 status_flag_df = pd.DataFrame(status_flag_counts.items(), columns=['status_flag', 'count'])
+print(quality_df)
+print(conditions_df)
+print(status_flag_df)
+
+# Normalize by tot_rows
+quality_df['normalized_count'] = quality_df['count'] / tot_rows
+conditions_df['normalized_count'] = conditions_df['count'] / tot_rows
+status_flag_df['normalized_count'] = status_flag_df['count'] / tot_rows
+
+# Check the quality flags distribution for all points
 
 
-for name, df in zip(['Quality', 'Conditions', 'Status_Flag'], [quality_df, conditions_df, status_flag_df]):
-    # Plotting the counts
-    fig, ax = plt.subplots(figsize=(12, 8))
 
-    sns.barplot(data=df, x=name.lower(), y='count', ax=ax, color='skyblue')
-    ax.set_title(f'Count of {name} Items', fontsize=14, fontweight='bold')
-    ax.set_xlabel(name, fontsize=12)
-    ax.set_ylabel('Count', fontsize=12)
-    ax.yticks(fontsize=12)
-    ax.tick_params(axis='x', rotation=45, labelsize=14)
-    plt.setp(ax.get_xticklabels(), rotation=45, ha='right')  # Align text with the end on the left
-    plt.savefig(f'{output_path}cma_{name.lower()}_flags_items_count.png', bbox_inches='tight')
+# for name, df in zip(['Quality', 'Conditions', 'Status_Flag'], [quality_df, conditions_df, status_flag_df]):
+#     # Plotting the counts
+#     fig, ax = plt.subplots(figsize=(12, 8))
 
-exit()
+#     sns.barplot(data=df, x=name.lower(), y='count', ax=ax, color='skyblue')
+#     ax.set_title(f'Count of {name} Items', fontsize=14, fontweight='bold')
+#     ax.set_xlabel(name, fontsize=12)
+#     ax.set_ylabel('Count', fontsize=12)
+#     ax.yticks(fontsize=12)
+#     ax.tick_params(axis='x', rotation=45, labelsize=14)
+#     plt.setp(ax.get_xticklabels(), rotation=45, ha='right')  # Align text with the end on the left
+#     plt.savefig(f'{output_path}cma_{name.lower()}_flags_items_count.png', bbox_inches='tight')
+
+
 
 
 # Create subplots
@@ -102,17 +120,17 @@ for structure in df['structure'].unique():
         counts.columns = [var, 'normalized_count']
 
         # Create the plot
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=(7, 5))
         sns.barplot(
             data=counts,
             x=var,
             y='normalized_count',
         )
         plt.title(f"{title} for Structure {structure}", fontsize=14, fontweight='bold')
-        plt.xlabel("Categories", fontsize=12)
-        plt.ylabel("Normalized Counts", fontsize=12)
-        plt.xticks(rotation=45, ha="right", fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xlabel("Categories", fontsize=14)
+        plt.ylabel("Normalized Counts", fontsize=14)
+        plt.xticks(rotation=45, ha="right", fontsize=14)
+        plt.yticks(fontsize=14)
 
         # Save the figure
         plt.tight_layout()
