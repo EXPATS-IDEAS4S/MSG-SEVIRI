@@ -11,6 +11,8 @@ from scipy.interpolate import griddata
 from datetime import datetime, timedelta
 import os
 from scipy.ndimage import binary_closing
+import cmcrameri.cm as cmc
+
 
 # Function to apply binary closing with a square structure of given size
 def apply_closing(image, size):
@@ -18,7 +20,7 @@ def apply_closing(image, size):
     closed_image = binary_closing(image, structure=structure)
     return closed_image
 
-structure_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+structure_sizes = [1, 3]
 
 # Define paths
 cmsaf_folder = "/data1/crops/cmsaf_2013-2014-2015-2016_expats/nc_clouds/"
@@ -30,7 +32,8 @@ output_path = "/home/Daniele/fig/cma_analysis/modis/conf_matrix/"
 
 lonmin_plot, lonmax_plot, latmin_plot, latmax_plot = 5, 16, 42, 51.5
 
-plot = False
+
+plot = True
 closing = True
 if closing:
     output_path = "/home/Daniele/fig/cma_analysis/modis/conf_matrix/closing/"
@@ -320,8 +323,8 @@ for modis_file in modis_files:
             agreement = np.full_like(binarized_modis_mask, fill_value=np.nan, dtype=float)  # Use NaN as the default value
             agreement[(cmsaf_regridded == 1) & (binarized_modis_mask == 1)] = 0  # True Positive (TP)
             agreement[(cmsaf_regridded == 0) & (binarized_modis_mask == 0)] = 1  # True Negative (TN)
-            agreement[(cmsaf_regridded == 0) & (binarized_modis_mask == 1)] = 2  # False Negative (FN)
-            agreement[(cmsaf_regridded == 1) & (binarized_modis_mask == 0)] = 3  # False Positive (FP)
+            agreement[(cmsaf_regridded == 1) & (binarized_modis_mask == 0)] = 2  # False Positive (FP)
+            agreement[(cmsaf_regridded == 0) & (binarized_modis_mask == 1)] = 3  # False Negative (FN)
             agreement = np.ma.masked_invalid(agreement)
             #print(tn, np.sum(agreement==2))
             #print(fp, np.sum(agreement==4))
@@ -334,12 +337,21 @@ for modis_file in modis_files:
             cmap = mcolors.ListedColormap(['black', 'white'])
             norm = mcolors.BoundaryNorm(boundaries=[0, 1, 2], ncolors=2)
 
-            # Define a custom colormap with meaningful colors for confusion matrix
-            cmap_cm = mcolors.ListedColormap(['blue', 'green', 'yellow', 'red'])
+            # # Define a custom colormap with meaningful colors for confusion matrix
+            # cmap_cm = mcolors.ListedColormap(['blue', 'green', 'yellow', 'red'])
+            # norm_cm = mcolors.BoundaryNorm(boundaries=[0, 1, 2, 3, 4], ncolors=4)
+
+            # Use a Fabio Crameri colormap (e.g., 'navia') and pick four discrete colors
+            cmap_full = cmc.batlowK  # Full colormap
+            cmap_colors = [cmap_full(i / 3) for i in range(4)]  # Extract 4 evenly spaced colors
+
+            # Create a custom colormap with these 4 discrete colors
+            cmap_cm = mcolors.ListedColormap(cmap_colors)
             norm_cm = mcolors.BoundaryNorm(boundaries=[0, 1, 2, 3, 4], ncolors=4)
 
+
             # Create a figure with 3 subplots in one row
-            fig, axes = plt.subplots(1, 1, subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(6, 6))
+            fig, axes = plt.subplots(1, 1, subplot_kw={'projection': ccrs.PlateCarree()}, figsize=(4, 4))
 
             #axes = axes.flatten()
 
@@ -367,7 +379,7 @@ for modis_file in modis_files:
             # Add a colorbar with labels for each category
             cbar = plt.colorbar(im, ax=axes, orientation='vertical', shrink=0.6, pad=0.05)
             cbar.set_ticks([0.5, 1.5, 2.5, 3.5])
-            cbar.set_ticklabels(['TP', 'TN', 'FN', 'FP'])
+            cbar.set_ticklabels(['TP', 'TN', 'FP', 'FN'])
 
             # # Add a colorbar with labels for each category
             # cbar = plt.colorbar(im2, ax=axes[1], orientation='vertical', shrink=0.6, pad=0.05)
@@ -376,16 +388,16 @@ for modis_file in modis_files:
             
             #for i, ax in enumerate(axes):
             # Set the extend
-            axes.set_extent([lonmin_plot, lonmax_plot, latmin_plot, latmax_plot], crs=ccrs.PlateCarree())
+            axes.set_extent([lonmin_cmsaf, lonmax_cmsaf, latmin_cmsaf, latmax_cmsaf], crs=ccrs.PlateCarree())
 
             # Add coastlines, borders, and other features
-            axes.coastlines(resolution='10m', linewidth=0.8)
-            axes.add_feature(cfeature.BORDERS, linestyle=':', linewidth=0.5)
-            axes.add_feature(cfeature.LAND, facecolor='lightgray', edgecolor='black')
+            axes.coastlines(resolution='10m', linewidth=0.8, linestyle=':', color='red')
+            axes.add_feature(cfeature.BORDERS, linestyle=':', linewidth=0.8, color='red')
+            axes.add_feature(cfeature.LAND, facecolor='lightgray', edgecolor='red')
             axes.add_feature(cfeature.OCEAN, facecolor='lightblue')
             
             # Set the title for each subplot, with the cf values (only 2 decimals)
-            axes.set_title(f"{cmsaf_start_time} - {str(cmsaf_end_time).split(' ')[1]}, closing structure {structure}x{structure} \n TP: {tp/tot_points:.2f}, TN: {tn/tot_points:.2f}, FN: {fn/tot_points:.2f}, FP: {fp/tot_points:.2f}", fontsize=11, fontweight='bold')
+            axes.set_title(f"{cmsaf_start_time} - {str(cmsaf_end_time).split(' ')[1]} \n closing structure {structure}x{structure} \n TP: {tp/tot_points:.2f}, TN: {tn/tot_points:.2f} \n FN: {fn/tot_points:.2f}, FP: {fp/tot_points:.2f}", fontsize=11, fontweight='bold')
 
             # Save the entire figure
             plt.subplots_adjust(wspace=0.3)
