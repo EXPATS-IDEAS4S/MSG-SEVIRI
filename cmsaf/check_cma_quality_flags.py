@@ -31,11 +31,14 @@ status_flag_df = pd.DataFrame()
 
 # Get all NetCDF files from cma_crops_path
 nc_files = sorted(glob(os.path.join(cma_crops_path, "2013*.nc")))	
+print(len(nc_files))
 
 # Loop through files and accumulate flag counts
 for nc_file in nc_files:
     # Extract data from file
     cma_ds = extract_data(nc_file, cma_product_path)
+    print(cma_ds)
+    exit()
     if cma_ds:
         # Extract timestamp
         timestamp = pd.to_datetime(cma_ds.time.values[0])  # Adjust if needed
