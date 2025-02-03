@@ -6,10 +6,12 @@ import numpy as np
 # Path to your NetCDF file
 #path_to_files = '/home/daniele/Documenti/PhD_Cologne/Case_Studies/Germany_Flood_2021/CTH/'
 #nc_file = 'CTXin20210712000000405SVMSGI1UD.nc'
-path_to_files = "/home/dcorradi/Downloads/"
-nc_file = '99e0d52cefd9ce6fa084024b438b87c5.nc'
+path_to_files = "/data/sat/msg/CM_SAF/CMA_processed/2013/04/01/"
+nc_file = 'CMAin20130401000000405SVMSG01UD.nc'
 ds = xr.open_dataset(path_to_files+nc_file)
-print(ds)
+print(ds.cma.values)
+
+#print(np.unique(ds.platform_flag.values))
 #print(ds.lat.values, ds.lon.values)
 #print(ds.lons.values.flatten()[1000:])
 #print(ds.lats.values.flatten()[1000:])

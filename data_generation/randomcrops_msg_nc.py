@@ -103,7 +103,6 @@ for year in years:
 
         #open daily dataset
         ds_day = xr.open_dataset(file)
-        #print(ds_day)
 
         #select only variable of interest
         ds_day = ds_day[cloud_prm]         
