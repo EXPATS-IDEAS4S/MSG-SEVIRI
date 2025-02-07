@@ -51,7 +51,9 @@ print(tot_rows)
 # Keep only time lot lan xolumns
 df = df[['time', 'lat', 'lon']]
 print(df)
-
+#print unique times
+print(df['time'].unique())
+exit()
 
 # Get the list of the nc file in cmsaf_path
 nc_files = sorted(glob(os.path.join(cmsaf_path, "2013*.nc")))
@@ -64,13 +66,17 @@ for cmsaf_var in cmsaf_vars:
     df[f"{cmsaf_var}_value"] = np.nan  # Placeholder for original values
     df[f"{cmsaf_var}_regridded"] = np.nan  # Placeholder for regridded values
 
+# Initialize variables to cache the previous timestamp and regridded datasets
+prev_time = None
+regridded_datasets = {}
+print(df)
+exit()
+
 # Loop over the DataFrame rows
 for index, row in df.iterrows():
-    #print(row)
     time = row['time']
     lat = row['lat']
     lon = row['lon']
-    print(time, lat, lon)
     
     # Convert time to datetime and extract components
     time = pd.to_datetime(time)
@@ -78,67 +84,92 @@ for index, row in df.iterrows():
     
     # Construct file path
     cloud_nc = f"{cmsaf_path}{year}{month:02d}{day:02d}_{hour:02d}:{minute:02d}_EXPATS_0.nc"
-    print(cloud_nc)
     
-    # Check if the file exists
-    if not os.path.exists(cloud_nc):
-        continue
+    # If the time is the same as the previous row, reuse the cached regridded datasets
+    if time == prev_time:
+        print(f"Reusing cached data for {time}")
+    else:
+        print(f"Processing new timestamp: {time}")
+        
+        # Update the previous timestamp
+        prev_time = time
+        
+        # Check if the file exists
+        if not os.path.exists(cloud_nc):
+            print(f"File not found: {cloud_nc}")
+            continue
+        
+        # Open the NetCDF file
+        cloud_ds = xr.open_dataset(cloud_nc)
+        
+        # Process and cache the regridded datasets for each variable
+        regridded_datasets = {}
+        for cmsaf_var in cmsaf_vars:
+            cloud_ds_var = cloud_ds[cmsaf_var]
+            
+            # Get latitude and longitude arrays
+            cloud_lat = cloud_ds_var['lat'].values
+            cloud_lon = cloud_ds_var['lon'].values
+            
+            # Create lat/lon grids
+            lat_grid, lon_grid = np.meshgrid(cloud_lat, cloud_lon, indexing='ij')
+            
+            # Fill missing data using interpolation
+            cloud_filled = fill_missing_data_with_interpolation(lat_grid, lon_grid, cloud_ds_var.values)
+            
+            # Create a new DataArray with the interpolated/regridded data
+            regridded_data = xr.DataArray(
+                cloud_filled,
+                coords={
+                    "lat": ("lat", cloud_lat),
+                    "lon": ("lon", cloud_lon),
+                },
+                dims=("lat", "lon"),
+                name=f"{cmsaf_var}_interpolated"
+            )         
+            
+            # Cache the regridded dataset
+            regridded_datasets[cmsaf_var] = {
+                "data": regridded_data,
+                "lat": cloud_lat,
+                "lon": cloud_lon
+            }
     
-    # Open the NetCDF file
-    cloud_ds = xr.open_dataset(cloud_nc)
-    
-    # Loop over each variable in cmsaf_vars
+    # For the current row, find the values in the cached regridded dataset
     for cmsaf_var in cmsaf_vars:
-        # Extract the variable from the dataset
-        cloud_ds_var = cloud_ds[cmsaf_var]
-        
-        # Get latitude and longitude arrays
-        cloud_lat = cloud_ds_var['lat'].values
-        cloud_lon = cloud_ds_var['lon'].values
-        
-        # Create lat/lon grids
-        lat_grid, lon_grid = np.meshgrid(cloud_lat, cloud_lon, indexing='ij')
-        
-        # Fill missing data using interpolation
-        cloud_filled = fill_missing_data_with_interpolation(lat_grid, lon_grid, cloud_ds_var.values)
-
-        # # Plot the 2d array using cartopy before and after interpolation
-        # fig, ax = plt.subplots(1, 2, figsize=(10, 5), subplot_kw={'projection': ccrs.PlateCarree()})
-        # ax[0].pcolormesh(lon_grid, lat_grid, cloud_ds.values, transform=ccrs.PlateCarree(), cmap='Greys')
-        # ax[1].pcolormesh(lon_grid, lat_grid, cloud_filled, transform=ccrs.PlateCarree(), cmap='Greys')
-        
-        # plt.savefig(f"{output_path}{cmsaf_var}interp_{year}{month:02d}{day:02d}_{hour:02d}:{minute:02d}.png")
-        
-        # Create a new DataArray with the interpolated/regridded data
-        regridded_data = xr.DataArray(
-            cloud_filled,
-            coords={
-                "lat": ("lat", cloud_lat),
-                "lon": ("lon", cloud_lon),
-            },
-            dims=("lat", "lon"),
-            name=f"{cmsaf_var}_interpolated"
-        )
-        
-        # Find the nearest indices for the given lat and lon
-        lat_idx = np.abs(cloud_lat - lat).argmin()
-        lon_idx = np.abs(cloud_lon - lon).argmin()
-        
-        # Retrieve the values at the found indices
-        closed_pixel_value = cloud_ds_var.isel(lat=lat_idx, lon=lon_idx).values
-        closed_pixel_value_regrid = regridded_data.isel(lat=lat_idx, lon=lon_idx).values
-        
-        print(f"Value for {cmsaf_var} at closed pixel (lat: {lat}, lon: {lon}): {closed_pixel_value}")
-        print(f"Regridded value for {cmsaf_var} (lat: {lat}, lon: {lon}): {closed_pixel_value_regrid}")
-        
-        # Update the DataFrame with the retrieved values
-        df.at[index, f"{cmsaf_var}_value"] = closed_pixel_value
-        df.at[index, f"{cmsaf_var}_regridded"] = closed_pixel_value_regrid
+        if cmsaf_var in regridded_datasets:
+            regridded_data = regridded_datasets[cmsaf_var]["data"]
+            cloud_lat = regridded_datasets[cmsaf_var]["lat"]
+            cloud_lon = regridded_datasets[cmsaf_var]["lon"]
+            
+            # Find the nearest indices for the given lat and lon
+            lat_idx = np.abs(cloud_lat - lat).argmin()
+            lon_idx = np.abs(cloud_lon - lon).argmin()
+            
+            # Retrieve the values at the found indices
+            closed_pixel_value = cloud_ds[cmsaf_var].isel(lat=lat_idx, lon=lon_idx).values
+            closed_pixel_value_regrid = regridded_data.isel(lat=lat_idx, lon=lon_idx).values
+            
+            #print(f"Value for {cmsaf_var} at closed pixel (lat: {lat}, lon: {lon}): {closed_pixel_value}")
+            #print(f"Regridded value for {cmsaf_var} (lat: {lat}, lon: {lon}): {closed_pixel_value_regrid}")
+            
+            # Update the DataFrame with the retrieved values
+            df.at[index, f"{cmsaf_var}_value"] = closed_pixel_value
+            df.at[index, f"{cmsaf_var}_regridded"] = closed_pixel_value_regrid
+            # Print the updated DataFrame row
 
 
-# Save the filled df
 
 # Save the DataFrame to a CSV file
 df.to_csv(f'{output_path}cloud_mask_closed_points_cloud_properties.csv', index=False)
 
-#2403113 nohup
+#nohup 
+
+
+
+ # # Plot the 2d array using cartopy before and after interpolation
+# fig, ax = plt.subplots(1, 2, figsize=(10, 5), subplot_kw={'projection': ccrs.PlateCarree()})
+# ax[0].pcolormesh(lon_grid, lat_grid, cloud_ds.values, transform=ccrs.PlateCarree(), cmap='Greys')
+# ax[1].pcolormesh(lon_grid, lat_grid, cloud_filled, transform=ccrs.PlateCarree(), cmap='Greys')
+
+# plt.savefig(f"{output_path}{cmsaf_var}interp_{year}{month:02d}{day:02d}_{hour:02d}:{minute:02d}.png")
