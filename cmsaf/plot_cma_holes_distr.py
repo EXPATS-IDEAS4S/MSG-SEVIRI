@@ -1,3 +1,4 @@
+import pandas as pd
 from process_cma_functions import plot_normalized_histogram, plot_monthly_granular_distribution
 from process_cma_functions import plot_normalized_histogram_from_csv, plot_temporal_granular_distribution_from_csv
 
@@ -8,10 +9,14 @@ output_folder = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128
 monthly_counts_path = f'{output_folder}monthly_counts.csv'
 aggregated_counts_path = f'{output_folder}aggregated_counts.csv'
 total_points_by_category_path = f'{output_folder}total_points_by_category.csv'
+df_months_tot = pd.read_csv(monthly_counts_path)
+print(df_months_tot)
 
 df_hourly_counts_cloudy_path = f'{output_folder}hourly_counts_cloudy.csv'
 df_monthly_counts_cloudy_path = f'{output_folder}monthly_counts_cloudy.csv'
 df_hourly_counts_path = f'{output_folder}hourly_counts.csv'
+df_monthly_counts = f'{output_folder}monthly_counts.csv'
+print(df_monthly_counts)
 
 # Plot normalized histogram after processing all files
 #plot_normalized_histogram(aggregated_counts, total_points_by_category, output_folder)

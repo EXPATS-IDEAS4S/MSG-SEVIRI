@@ -8,9 +8,9 @@ import pandas as pd
 from cropping_functions import compute_global_min_max
 
 # Set the directory containing your NetCDF files
-crops_dir = '/work/dcorradi/crops/IR_108-WV_062-IR_039_2015-2016_128x128_EXPATS/nc/'
-output_dir = '/work/dcorradi/crops/IR_108-WV_062-IR_039_2015-2016_128x128_EXPATS/'
-cma_dir = '/work/dcorradi/crops/IR_108-WV_062-IR_039_2015-2016_128x128_EXPATS/nc_clouds/'
+crops_dir = '/work/dcorradi/crops/IR_108_2013_200x200_EXPATS_fixed/nc/'
+output_dir = '/work/dcorradi/crops/IR_108_2013_200x200_EXPATS_fixed/'
+cma_dir = '/work/dcorradi/crops/IR_108_2013_200x200_EXPATS_fixed/nc_clouds/'
 
 channel_name = 'IR_108'
 unit = 'Brightness Temperature (K)'
@@ -20,8 +20,8 @@ apply_cma = True
 bin_width = 2
 
 #list of paths
-crops_paths = sorted(glob(crops_dir+'*.nc'))
-cma_paths = sorted(glob(cma_dir+'*.nc'))
+crops_paths = sorted(glob(crops_dir+'201304*.nc'))
+cma_paths = sorted(glob(cma_dir+'201304*.nc'))
 print(len(crops_paths))
 print(len(cma_paths))
 

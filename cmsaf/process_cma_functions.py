@@ -52,9 +52,9 @@ def plot_temporal_granular_distribution_from_csv(csv_file_path, output_folder, t
     print(df_long)
     # Plotting the normalized counts
     if time_label=='Month':
-        figsize = (5, 3)
+        figsize = (4, 2)
     elif time_label=='Hour':
-        figsize = (7, 3)
+        figsize = (6, 2)
     plt.figure(figsize=figsize)
     sns.barplot(data=df_long, x=time_label, y='Normalized Count', color='lightblue')#, '5x5': 'orange'})
 
@@ -63,13 +63,13 @@ def plot_temporal_granular_distribution_from_csv(csv_file_path, output_folder, t
     plt.yticks(fontsize=14) 
     plt.xlabel(time_label, fontsize=12)
     if total_csv_file_path:
-        plt.ylabel("Normalized Count", fontsize=12)
+        plt.ylabel("Normalized \n Count", fontsize=12)
         filename_save_path = f'{output_folder}/normalized_cloud_mask_holes_distr_by_{time_label}.png'
-        plt.title(f"Normalized {time_label}ly Distribution of Closed Points", fontsize=12, fontweight='bold')
+        plt.title(f"Closed Pixels by {time_label}", fontsize=12, fontweight='bold')
     else:
         plt.ylabel("Count", fontsize=12)
         filename_save_path = f'{output_folder}/cloud_mask_holes_distr_by_{time_label}.png'
-        plt.title(f"{time_label}ly Distribution of Closed Points", fontsize=12, fontweight='bold')
+        plt.title(f"{time_label}ly Distribution of Closed Pixels", fontsize=12, fontweight='bold')
 
     # Position legend outside the plot on the right
     #plt.legend(title="Filter", title_fontsize='13', fontsize='11', loc='center left', bbox_to_anchor=(1, 0.5))
@@ -140,7 +140,7 @@ def plot_normalized_histogram_from_csv(aggregated_counts_csv, total_points_csv, 
     normalized_counts = normalized_counts.rename(columns={'index': 'Elevation_Category'})
 
     # Plot with Seaborn
-    plt.figure(figsize=(4, 3))
+    plt.figure(figsize=(5, 4))
     sns.barplot(data=normalized_counts, x='Elevation_Category', y='Normalized_Count', hue='Filter', 
                 palette={'3x3': 'lightblue'})# '5x5': 'orange'})
 
@@ -149,7 +149,7 @@ def plot_normalized_histogram_from_csv(aggregated_counts_csv, total_points_csv, 
     plt.ylabel('Normalized Count',fontsize=12)
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
-    plt.title('Closed Points Distribution by Elevation', fontsize=12, fontweight='bold')
+    plt.title('Elevation distribution of closed pixels', fontsize=12, fontweight='bold')
     # hide the legend
     plt.legend().remove()
     #plt.legend(title="Filter", title_fontsize='13', fontsize='11', loc='center left', bbox_to_anchor=(1, 0.5))

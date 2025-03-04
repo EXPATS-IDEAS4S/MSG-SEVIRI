@@ -187,9 +187,9 @@ def save_nc(output_dir, crop_file, ds):
     
 
 # Define directories
-crop_directory = '/work/dcorradi/crops/case_studies/Marche_Flood_22/nc/' 
+crop_directory = '/work/dcorradi/crops/IR_108_2013-2014-2015-2016_200x200_EXPATS_fixed/nc/' 
 cloud_directory = '/data/sat/msg/CM_SAF/merged_cloud_properties/'
-output_directory = '/work/dcorradi/crops/case_studies/Marche_Flood_22/nc_clouds/'
+output_directory = '/work/dcorradi/crops/IR_108_2013-2014-2015-2016_200x200_EXPATS_fixed/nc_clouds/'
 msg_directory = '/data/sat/msg/netcdf/parallax/'
 
 # Check if the directory exists
@@ -205,7 +205,7 @@ crops_list = sorted(glob(f'{crop_directory}*.nc'))
 clouds_list = []
 msg_list = []
 
-years = ['2022']#, '2016']
+years = ['2015', '2016']
 
 # Iterate over the years and gather the files for each year
 for year in years:
@@ -233,10 +233,17 @@ cloud_vars = ['cph', 'cma', 'cot','ctp'] #'cwp', 'ctt', , 'cth', 'cre']
 
 # Define your processing function
 def process_and_save(crop_file):
-    cloud_ds = process_files(crop_file, clouds_list, cloud_vars)
-    #msg_ds = process_files(crop_file, msg_list, msg_vars)  # Uncomment if needed
-    save_nc(output_directory, crop_file, cloud_ds)
-    return crop_file  # Optionally return something for tracking progress
+    # replace a part of the strin in crop file fron nc to nc_clouds 
+    crop_cmsaf = crop_file.replace('/nc/', '/nc_clouds/')
+    # check if the file already exists
+    if os.path.exists(crop_cmsaf):
+        print(f"File already exists: {crop_cmsaf}")
+        return crop_file
+    else:
+        cloud_ds = process_files(crop_file, clouds_list, cloud_vars)
+        #msg_ds = process_files(crop_file, msg_list, msg_vars)  # Uncomment if needed
+        save_nc(output_directory, crop_file, cloud_ds)
+        return crop_file  # Optionally return something for tracking progress
 
 # Parallel processing of crops_list
 with ProcessPoolExecutor() as executor:
@@ -252,4 +259,4 @@ with ProcessPoolExecutor() as executor:
             print(f"Error processing {crop_file}: {e}")
 
 
-#nohup 3741663
+#nohup 1069877

@@ -176,14 +176,15 @@ final_df.rename(columns={'structure': 'closed_pixels'}, inplace=True)
 print(final_df)
 
 # Plot the distribution of snow cover categories
-fig, ax = plt.subplots(figsize=(6, 3))
+fig, ax = plt.subplots(figsize=(5, 2))
 seaborn.barplot(data=final_df, x='snow_cover',y='normalized_count', hue='closed_pixels', ax=ax)
 plt.xlabel("HSAF Category", fontsize=12)
-plt.ylabel("Normalized Count", fontsize=12)
+plt.ylabel("Normalized \n Count", fontsize=12)
 plt.xticks(rotation=45, ha='right', fontsize=12)
-plt.yticks(fontsize=12)
+# Set y-axis ticks to specific values
+plt.yticks([0.1, 0.2, 0.3, 0.4, 0.5], fontsize=12)
 plt.legend(title='Closed Pixels', fontsize=12)
-plt.title("HSAF category for the closed pixels", fontsize=12, fontweight='bold')
+plt.title("HSAF categories for the closed pixels", fontsize=12, fontweight='bold')
 fig.savefig(f'{output_path}snow_cover_category_distribution.png', bbox_inches='tight')
 
 
