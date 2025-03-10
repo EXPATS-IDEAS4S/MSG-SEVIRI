@@ -11,6 +11,7 @@ and regrid the data in a regular lat-lon grid
 TODO: check for missing timestamps once the daily dataset has been created
 TODO: better handle inizialization of dataset for native grid 
 """
+# %%
 import satpy 
 from glob import glob
 import xarray as xr
@@ -24,7 +25,7 @@ import warnings
 #Import parameters from config file and custom methods
 from config_satpy_process import path_to_file, path_to_cth, natfile, cth_file, path_to_save
 from config_satpy_process import lonmin, lonmax, latmax, latmin, channels, step_deg, interp_method
-from config_satpy_process import parallax_correction, regular_grid, msg_res
+from config_satpy_process import parallax_correction, regular_grid, msg_res, cth_res
 from config_satpy_process import msg_reader, cth_reader
 from config_satpy_process import year, month
 from regrid_functions import regrid_data, fill_missing_data_with_interpolation, generate_regular_grid
@@ -33,7 +34,7 @@ from regrid_functions import regrid_data, fill_missing_data_with_interpolation, 
 dir_path = os.path.dirname(os.path.abspath(__file__))
 
 # list of custom methods
-
+# %%
 def compute_timestamps_from_time_range(start_date, end_date, time_interval=15):
     """
     Compute a list of timestamps given the time range,
@@ -185,7 +186,7 @@ def find_highest_index(lst, value):
     else:
         raise ValueError
 
-def find_common_timestamp_position(timestamp, list1, list2):
+def find_common_timestamp_position(timestamp, msg_list, cth_list):
     """
     Checks if a given timestamp is present in both provided lists and returns the highest positions
     in each list if found. If the timestamp is not found in either list, returns None.
@@ -199,9 +200,22 @@ def find_common_timestamp_position(timestamp, list1, list2):
     A tuple containing the highest positions in list1 and list2, or None if not found in both.
     """
     try:
-        pos1 = find_highest_index(list1, timestamp)  # Find the highest index in list1
-        pos2 = find_highest_index(list2, timestamp)  # Find the highest index in list2
-        return (pos1, pos2)
+        # find position of timestamp in msg list
+        pos_msg = find_highest_index(msg_list, timestamp)  # Find the highest index in list1
+
+        # round down to nearest 15 minutes
+        t_before = t - timedelta(minutes=t.minute % cth_res)
+
+        # if the timestamp is already on 15 minute interval, 
+        if t_before == t:
+            t_after = t_before
+        else:
+            t_after = t_before + timedelta(minutes=cth_res)
+        
+        # find previous and following cth timestamps
+        pos_cth_before = find_highest_index(cth_list, t_before)  # Find the highest index in list2
+        pos_cth_after = find_highest_index(cth_list, t_after)  # Find the highest index in list2
+        return (pos_msg, pos_cth_before, pos_cth_after)
     except ValueError:
         # This block is executed if the timestamp is not found in either list
         return None
@@ -357,7 +371,7 @@ def get_filename_and_path(timestamp, parallax_correction, path_to_save):
     return proj_file_path, filename
 
 
-
+# %%
 if __name__ == "__main__":
 
     # Ignore specific warnings by message
@@ -370,7 +384,7 @@ if __name__ == "__main__":
     #compute timestamps of the period
     begin_date = f"{year}.{month:02d}.01"
     end_date = f"{year}.{month+1:02d}.01" #end point is excluded. CAREFUL! this only works for months except december
-    timestamps = compute_timestamps_from_time_range(begin_date,end_date)   
+    timestamps = compute_timestamps_from_time_range(begin_date,end_date,time_interval=msg_res)
     print(f'total number of timestamps in {begin_date}-{end_date}: {len(timestamps)}')
 
     #open all MSG files in directory 
