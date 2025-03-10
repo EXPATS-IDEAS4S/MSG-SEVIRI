@@ -14,16 +14,8 @@ sys.path.append('/home/dcorradi/Documents/Codes/MSG-SEVIRI/')
 from process.regrid_functions import regrid_data, generate_regular_grid
 
 #Year of data
-year = '2023'
-
-# Define the folder of the CMSAF file to regrid
-cmsaf_folder = "/data/sat/msg/CM_SAF/CMA/"+year+"/*/*/"
-cmsaf_filepattern = "CMAin*405SVMSGI1UD.nc"
-cmsaf_aux_path = "/data/sat/msg/CM_SAF/CMA/"+year+"/CM_SAF_CLAAS3_L2_AUX.nc"
-cmsaf_name = 'cma'
-
-# Define path for saving the processed CM SAF file
-output_folder = "/data/sat/msg/CM_SAF/CMA_processed/"+year+"/"
+years = ['2013']
+variable_names = ['ctp'] #['cma', 'quality', 'status_flag', 'conditions']
 
 # Define extent of domain of interest
 lonmax, lonmin, latmax, latmin = 16., 5., 51.5, 42.
@@ -34,22 +26,100 @@ lat_points, lon_points = generate_regular_grid(latmin,latmax,lonmin,lonmax,0.04)
 msg_lat_grid, msg_lon_grid = np.meshgrid(lat_points,lon_points,indexing='ij')
 #print(np.shape(msg_lat_grid))
 
-# Open all CMSAF files
-cmsaf_files = sorted(glob(cmsaf_folder+cmsaf_filepattern))
-
-# open dataset for aux file
-ds_aux = xr.open_dataset(cmsaf_aux_path, decode_times=False)
-#print(ds_aux.lon.values)
-
 def get_cmsaf_lat_lon(ds_cmsaf, ds_aux):
-    # Get lat lon from AUX file
-    grid_idx = ds_cmsaf.georef_offset_corrected.values
-    lat_aux = ds_aux['lat'].values[grid_idx]
-    #print('lat aux', lat_aux)
-    lon_aux = ds_aux['lon'].values[grid_idx]
-    #print('lon aux', lon_aux)
-    return  lat_aux, lon_aux
+        # Get lat lon from AUX file
+        grid_idx = ds_cmsaf.georef_offset_corrected.values
+        lat_aux = ds_aux['lat'].values[grid_idx]
+        #print('lat aux', lat_aux)
+        lon_aux = ds_aux['lon'].values[grid_idx]
+        #print('lon aux', lon_aux)
+        return  lat_aux, lon_aux
 
+for year in years:
+    # Define the folder of the CMSAF file to regrid
+    cmsaf_folder = "/data/sat/msg/CM_SAF/CTX/"+year+"/*/*/"
+    cmsaf_filepattern = "CTXin*.nc"
+    cmsaf_aux_path = "/data/sat/msg/CM_SAF/CMA/"+year+"/CM_SAF_CLAAS3_L2_AUX.nc"
+    
+    # Define path for saving the processed CM SAF file
+    output_folder = "/data/sat/msg/CM_SAF/CMA_processed/"+year+"/"
+
+    # Open all CMSAF files
+    cmsaf_files = sorted(glob(cmsaf_folder+cmsaf_filepattern))
+
+    # open dataset for aux file
+    ds_aux = xr.open_dataset(cmsaf_aux_path, decode_times=False)
+    #print(ds_aux.lon.values)
+
+    # Loop through each cmsaf file
+    for cmsaf_file in cmsaf_files:
+        # Open dataset for CMSAF
+        ds_cmsaf = xr.open_dataset(cmsaf_file)
+        print(ds_cmsaf.conditions.flag_meanings)
+
+        # Extract time and date
+        time = ds_cmsaf.time.values[0]
+        print(time)
+
+        # Extract month, and day
+        month = str(time).split('-')[1]
+        day = str(time).split('-')[2][0:2]
+
+        # Get the lat/lon from auxiliary file
+        lat_aux, lon_aux = get_cmsaf_lat_lon(ds_cmsaf, ds_aux)
+
+        # Create an empty xarray Dataset for regridded data
+        ds_regridded = xr.Dataset()
+
+        # Loop through the variables to regrid
+        for var_name in variable_names:  # Add all variable names here
+            if var_name in ds_cmsaf.variables:
+                print(f"Regridding variable: {var_name}")
+                
+                # Extract variable data
+                var_data = ds_cmsaf[var_name].values[0, :, :]
+
+                if var_name == 'ctp':
+                    print(var_data)
+                    # Plot the data before the regridding, usinf cartopy
+                    print(lon_aux.shape, lat_aux.shape, var_data.shape)
+                    import matplotlib.pyplot as plt
+                    import cartopy.crs as ccrs
+                    fig, ax = plt.subplots(1,1, figsize=(8, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+                    plt.pcolormesh(lon_aux.squeeze(), lat_aux.squeeze(), var_data, transform=ccrs.PlateCarree(),  cmap='Greys_r')
+                    ax.coastlines()
+                    plt.savefig(f'/home/dcorradi/Documents/Fig/cma/CTP_before_regrid_{time}.png')
+                    plt.close()
+                    exit()
+                
+                # Regrid the data
+                regridded_data = regrid_data(lat_aux, lon_aux, var_data, msg_lat_grid, msg_lon_grid, 'nearest')
+                
+                # Create a DataArray for the regridded data
+                regridded_da = xr.DataArray(
+                    regridded_data,
+                    dims=("lat", "lon"),
+                    coords={"lat": lat_points, "lon": lon_points},
+                    name=var_name
+                )
+                
+                # Add the regridded DataArray to the regridded dataset
+                ds_regridded[var_name] = regridded_da
+
+        # Add a new dimension for the time coordinate
+        ds_regridded = ds_regridded.expand_dims('time', axis=0)
+        ds_regridded['time'] = [time]
+
+        # Define the output path and save the regridded data
+        out_path = output_folder + month + '/' + day + '/'
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+        save_filename = os.path.join(out_path, os.path.basename(cmsaf_file))
+        ds_regridded.to_netcdf(save_filename)
+        print('Product saved to', save_filename, '\n')
+        
+
+"""
 # Loop through each cmsaf file
 for cmsaf_file in cmsaf_files:
     #open dataset for cmsaf
@@ -105,3 +175,4 @@ for cmsaf_file in cmsaf_files:
     ds.to_netcdf(save_filename)
     print('product saved to', save_filename,'\n')
     #exit()
+"""

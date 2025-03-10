@@ -6,12 +6,12 @@ import torchvision.transforms as transforms
 from math import sqrt
 import random
 
-train_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/tif_10th-90th/'
+train_path = '/work/dcorradi/crops/IR_108_2013-2014-2015-2016_200x200_EXPATS_fixed/CMA/closing/tif_200K-300K_greyscale/'
 train_cot_files = glob.glob(os.path.join(train_path,"*.tif"))
 
-RGB = True
+RGB = False
 
-x_pixels, y_pixels=128,128 
+x_pixels, y_pixels=200,200 
 
 #initialize values for computing mean and std
 r_channel ,r_total=0,0
@@ -72,4 +72,8 @@ print('')
 np.save(f'{train_path}mean.npy', np.array([r_mean,g_mean,b_mean]))
 np.save(f'{train_path}std.npy', np.array([R_std,G_std,B_std]))
 
-#1604704
+
+
+#mean of image intensity is - 0.24566070109766777 0.0 0.0
+
+#std of image intensity is - 0.2668053317096114 0.0 0.0

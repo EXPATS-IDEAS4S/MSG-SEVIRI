@@ -5,6 +5,9 @@ import numpy as np
 from scipy.spatial import cKDTree
 import seaborn as sns
 import pandas as pd
+import xarray as xr
+from glob import glob
+import os
 
 
 
@@ -42,30 +45,34 @@ def plot_temporal_granular_distribution_from_csv(csv_file_path, output_folder, t
 
     # Ensure Month is treated as a categorical type for proper ordering in the plot
     df_long[time_label] = pd.Categorical(df_long[time_label], categories=sorted(df_long[time_label].unique()), ordered=True)
-
+    #print(df_long)
+    #Take only the rows with 3x3
+    df_long = df_long[df_long['Filter']=='3x3']
+    #Check if the normalized counts are correct by summing them
+    print(df_long)
     # Plotting the normalized counts
     if time_label=='Month':
-        figsize = (7, 4)
+        figsize = (4, 2)
     elif time_label=='Hour':
-        figsize = (9, 4)
+        figsize = (6, 2)
     plt.figure(figsize=figsize)
-    sns.barplot(data=df_long, x=time_label, y='Normalized Count', hue='Filter', palette={'3x3': 'lightblue', '5x5': 'orange'})
+    sns.barplot(data=df_long, x=time_label, y='Normalized Count', color='lightblue')#, '5x5': 'orange'})
 
     # Customize plot aesthetics
-    plt.xticks(rotation=45, fontsize=14)
+    plt.xticks(rotation=45, fontsize=12)
     plt.yticks(fontsize=14) 
-    plt.xlabel(time_label, fontsize=14)
+    plt.xlabel(time_label, fontsize=12)
     if total_csv_file_path:
-        plt.ylabel("Normalized Count", fontsize=14)
+        plt.ylabel("Normalized \n Count", fontsize=12)
         filename_save_path = f'{output_folder}/normalized_cloud_mask_holes_distr_by_{time_label}.png'
-        plt.title(f"Normalized {time_label}ly Distribution of Granular Points", fontsize=15, fontweight='bold')
+        plt.title(f"Closed Pixels by {time_label}", fontsize=12, fontweight='bold')
     else:
-        plt.ylabel("Count", fontsize=14)
+        plt.ylabel("Count", fontsize=12)
         filename_save_path = f'{output_folder}/cloud_mask_holes_distr_by_{time_label}.png'
-        plt.title(f"{time_label}ly Distribution of Granular Points", fontsize=15, fontweight='bold')
+        plt.title(f"{time_label}ly Distribution of Closed Pixels", fontsize=12, fontweight='bold')
 
     # Position legend outside the plot on the right
-    plt.legend(title="Filter", title_fontsize='13', fontsize='11', loc='center left', bbox_to_anchor=(1, 0.5))
+    #plt.legend(title="Filter", title_fontsize='13', fontsize='11', loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
 
     # Save plot
@@ -126,25 +133,26 @@ def plot_normalized_histogram_from_csv(aggregated_counts_csv, total_points_csv, 
     
     # Calculate normalized counts
     normalized_counts = pd.DataFrame({
-        '3x3': df_aggregated_counts.loc['3x3'] / df_total_points['Total_Points'],
-        '5x5': df_aggregated_counts.loc['5x5'] / df_total_points['Total_Points']
+        '3x3': df_aggregated_counts.loc['3x3'] / df_total_points['Total_Points']
     }).reset_index().melt(id_vars='index', var_name='Filter', value_name='Normalized_Count')
-
+    #'5x5': df_aggregated_counts.loc['5x5'] / df_total_points['Total_Points']
     # Rename 'index' column for clarity
     normalized_counts = normalized_counts.rename(columns={'index': 'Elevation_Category'})
 
     # Plot with Seaborn
-    plt.figure(figsize=(7, 4))
+    plt.figure(figsize=(5, 4))
     sns.barplot(data=normalized_counts, x='Elevation_Category', y='Normalized_Count', hue='Filter', 
-                palette={'3x3': 'lightblue', '5x5': 'orange'})
+                palette={'3x3': 'lightblue'})# '5x5': 'orange'})
 
     # Customize plot
-    plt.xlabel('Elevation Category', fontsize=14)
-    plt.ylabel('Normalized Count',fontsize=14)
-    plt.xticks(fontsize=14)
-    plt.yticks(fontsize=14)
-    plt.title('Normalized Granular Point Distribution by Elevation', fontsize=15, fontweight='bold')
-    plt.legend(title="Filter", title_fontsize='13', fontsize='11', loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.xlabel('Elevation Category', fontsize=12)
+    plt.ylabel('Normalized Count',fontsize=12)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.title('Elevation distribution of closed pixels', fontsize=12, fontweight='bold')
+    # hide the legend
+    plt.legend().remove()
+    #plt.legend(title="Filter", title_fontsize='13', fontsize='11', loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
     
     # Save the plot
@@ -169,7 +177,7 @@ def plot_normalized_histogram(aggregated_counts, total_points_by_category, outpu
     
     # Normalize counts for each mask type by total points in each category
     normalized_counts_3x3 = [aggregated_counts['3x3'][cat] / total_points_by_category[cat] for cat in categories]
-    normalized_counts_5x5 = [aggregated_counts['5x5'][cat] / total_points_by_category[cat] for cat in categories]
+    #normalized_counts_5x5 = [aggregated_counts['5x5'][cat] / total_points_by_category[cat] for cat in categories]
 
     # Set up bar positions
     bar_width = 0.35
@@ -178,15 +186,15 @@ def plot_normalized_histogram(aggregated_counts, total_points_by_category, outpu
     # Plot bars for 3x3 and 5x5
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.bar(x - bar_width / 2, normalized_counts_3x3, bar_width, label='3x3', color='skyblue')
-    ax.bar(x + bar_width / 2, normalized_counts_5x5, bar_width, label='5x5', color='salmon')
+    #ax.bar(x + bar_width / 2, normalized_counts_5x5, bar_width, label='5x5', color='salmon')
 
     # Add labels and legend
     ax.set_xlabel('Elevation Category')
     ax.set_ylabel('Proportion of Granular Points')
-    ax.set_title('Normalized Granular Point Distribution by Elevation for 3x3 and 5x5 Filters')
+    ax.set_title('Normalized Granular Point Distribution by Elevation for 3x3 Filters')
     ax.set_xticks(x)
     ax.set_xticklabels(categories)
-    ax.legend()
+    #ax.legend()
 
     # Show plot
     plt.tight_layout()
@@ -349,3 +357,76 @@ def plot_cloud_mask(cloud_mask, closed_mask_3x3, closed_mask_5x5, granular_mask_
 
     # Save the plot
     fig.savefig(f'{output_folder}cloud_mask_{date}.png')
+
+
+
+def find_cma_file(cma_product_path, time_str):
+    """
+    Finds the corresponding CMA file based on the provided time string.
+
+    Args:
+        cma_product_path (str): Path to the directory containing CMA product files.
+        time_str (str): Time string in the format 'yyyy-mm-ddThh:mm', used to identify the matching CMA file.
+
+    Returns:
+        str: Path to the first matching CMA file found, or None if no matching file is found.
+    """
+
+    # Function to find the corresponding CMA file based on time
+    year, month, day, hh, mm = time_str[:4], time_str[5:7], time_str[8:10], time_str[11:13], time_str[14:16]
+    #print(f"Year: {year}, Month: {month}, Day: {day}, Hour: {hh}, Minute: {mm}")
+    folder_path = os.path.join(cma_product_path, year, month, day)
+    if not os.path.exists(folder_path):
+        print(f"Folder not found: {folder_path}")
+        return None
+
+    # Find the file with matching time
+    hhmm = hh + mm
+    file_pattern = f"CMAin{year}{month}{day}{hhmm}*.nc"
+    matching_files = glob(os.path.join(folder_path, file_pattern))
+    if matching_files:
+        return matching_files[0]
+    else:
+        print(f"No matching file found for {file_pattern}")
+        return None
+
+
+def extract_data(nc_file, cma_product_path):
+    """
+    Extracts the CMA dataset for the given crop dataset file based on matching latitude, 
+    longitude, and time information.
+
+    Args:
+        nc_file (str): Path to the crop dataset netCDF file.
+        cma_product_path (str): Path to the directory containing the CMA product files.
+
+    Returns:
+        xarray.Dataset: A subset of the CMA dataset corresponding to the latitude, longitude, 
+                        and time of the given crop dataset, or None if no matching CMA file is found.
+    """
+
+    # Open dataset of the crop and extract coordinates
+    ds = xr.open_dataset(nc_file)
+    time = ds.time.values
+    lat = ds.lat.values
+    lon = ds.lon.values
+    #print(f"Time: {time}")
+    #print(f"Lat: {lat.min()}, {lat.max()}")
+    #print(f"Lon: {lon.min()}, {lon.max()}")
+
+    # Find the corresponding CMA file      
+    cma_file = find_cma_file(cma_product_path, str(time))
+    print(f"CMA file: {cma_file}")
+    if cma_file:
+        cma_ds = xr.open_dataset(cma_file)
+        #print(cma_ds)
+
+        #Slice ds based on lat lon
+        cma_ds = cma_ds.sel(lat=lat, lon=lon, method='nearest')
+        #print(cma_ds)
+
+        return cma_ds
+    else:
+        print("No CMA file found")
+        return None
+      

@@ -87,15 +87,16 @@ def plot_dataset(dataset, output_folder, time_index=0, title="Categorical Data P
     plt.close()
 
 
-year = '2014'
+year = '2016'
 
 # Set the path to the folder containing your .tif files
 tif_folder = f"/data/sat/msg/H_SAF/H10_WGS84/{year}/"
 list_of_files = sorted(glob(tif_folder + '*.tif'))
 
 output_nc_folder = f'/data/sat/msg/H_SAF/H10_nc/{year}/' 
-output_fig_folder = '/data/sat/msg/H_SAF/H10_fig/'  
+output_fig_folder = f'/data/sat/msg/H_SAF/H10_fig/{year}/'  
 os.makedirs(output_nc_folder, exist_ok=True)
+os.makedirs(output_fig_folder, exist_ok=True)
 
 # Define target grid boundaries and step size
 lat_min, lat_max, lon_min, lon_max = 42, 51.5, 5, 16
@@ -149,7 +150,7 @@ def convert_and_regrid_tif_to_nc(filename, tif_folder, output_nc_folder, output_
         output_nc_path = os.path.join(output_nc_folder, f"{filename.replace('.tif', '.nc')}")
         regridded_dataset.to_netcdf(output_nc_path)
         print(f"Saved regridded dataset to {output_nc_path}")
-        plot_dataset(regridded_dataset, output_fig_folder+filename.split('.')[0], title="H10 Product")
+        #plot_dataset(regridded_dataset, output_fig_folder+filename.split('.')[0], title="H10 Product")
 
 # Process and regrid all .tif files in the folder
 for filename in sorted(os.listdir(tif_folder)):

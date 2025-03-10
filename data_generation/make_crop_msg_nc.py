@@ -37,11 +37,13 @@ import os
 import glob
 import time
 
-from cropping_functions import crops_nc, filter_by_domain, filter_by_time
+from cropping_functions import crops_nc_random, crops_nc_fixed, filter_by_domain, filter_by_time
 
 start_time = time.time()
 
-years = ['2022']#,'2015','2016'] #1 year is 17568 samples
+years = ['2013','2014','2015','2016'] #1 year is 17568 samples
+
+cropping_strategy = 'fixed' #random or fixed
 
 month_start = '04' #April
 month_end = '09' #Septeber
@@ -51,21 +53,24 @@ hour_end = '24' #UTC (not included, so if 18 it stop at 17.45, 24 will stop at 2
 
 # Define your range limits
 value_min = 200.0  # Example minimum value
-value_max = 350.0   # Example maximum value
+value_max = 320.0   # Example maximum value
  
 #pixels for the random crops
 #org_pixel = 128 #DC crops with pixel resolution 2x1 km --> aound 0.02°x0.01°?
 #TODO Crop size needs to be recalculated since I have 0.04°x0.04° resolution
 #or I shold resample the data first
-x_pixel = 128 #528
-y_pixel = 128 #288
+x_pixel = 200 #528
+y_pixel = 200 #288
 
-cloud_prm = ['IR_108','WV_062','IR_039'] #'cot', WV_062, IR_039
+cloud_prm = ['IR_108']#,'WV_062','IR_039'] #'cot', WV_062, IR_039
 
 #filter EXPATS domain to keep only Germany 
 #domain = lonmin, lonmax, latmin, latmax = 6, 16, 48, 52 #DC domain from the paper
 domain = lonmin, lonmax, latmin, latmax = 5, 16, 42, 51.5 #DC domain from the paper
 domain_name = 'EXPATS'
+
+crop_ul_lon = 6.5
+crop_ul_lat = 50.0
 
 n_samples = 1
 
@@ -74,7 +79,7 @@ cloud_prm_str = '-'.join(cloud_prm)
 years_str = '-'.join(years)
 
 #define output path
-output_path =  f'/work/dcorradi/crops/{cloud_prm_str}_{years_str}_{x_pixel}x{y_pixel}_{domain_name}/'
+output_path =  f'/work/dcorradi/crops/{cloud_prm_str}_{years_str}_{x_pixel}x{y_pixel}_{domain_name}_{cropping_strategy}/'
 
 # Check if the directory exists
 if not os.path.exists(output_path+'nc/'):
@@ -87,7 +92,7 @@ for year in years:
     msg_path = f'/data/sat/msg/netcdf/parallax/{year}/'
 
     #merge all msg file in nc format (they are organized in months folders)
-    msg_org_files = glob.glob(os.path.join(msg_path,"*/*.nc")) 
+    msg_org_files = glob.glob(os.path.join(msg_path,"*/*.nc")) #[:10] #for testing
 
     print('total files are - '+ str(len(msg_org_files)))
    
@@ -142,14 +147,21 @@ for year in years:
             # Check if the dataset has values outside the defined range
             is_outside_range = any([((ds_time[var] < value_min) | (ds_time[var] > value_max)).any() for var in ds_time.data_vars])
 
-            #if there are no Nan, the months is between April and September and time is before 17 UTC
+            #if there are no Nan, the months is between April and September 
             if not is_all_nan_ds and not is_outside_range and month >= month_start and month <= month_end and hour >= hour_start and hour < hour_end:
                 print(timestamp)            
 
                 # saving cropped images
                 filename_to_save = filename.split('-')[0]+'_'+str(timestamp).split('T')[1][0:5]+'_'+domain_name
-                print(filename_to_save)
-                crops_nc(ds_time, x_pixel, y_pixel, n_samples, filename_to_save, output_path)
+                #print(filename_to_save)
+                if cropping_strategy == 'random':
+                    crops_nc_random(ds_time, x_pixel, y_pixel, n_samples, filename_to_save, output_path)
+                elif cropping_strategy == 'fixed':
+                    #print('fixed')
+                    crops_nc_fixed(ds_time, x_pixel, y_pixel, [(crop_ul_lat,crop_ul_lon)], filename_to_save, output_path)          
+                else:
+                    raise ValueError(f"Invalid cropping strategy: '{cropping_strategy}'")
+
 
 print('crops generation is done!')
             
