@@ -20,37 +20,45 @@ Output:
     A text file named 'missing_timestamps.txt' within the specified directory, listing
     all missing timestamps (rounded to the nearest 15 minutes) within the specified date range.
 """
-
+# %%
 import os
 import sys
 import glob
 from datetime import datetime, timedelta
 from collections import defaultdict
 
+# get path of this file
+dir_path = os.path.dirname(os.path.abspath(__file__))
+
 # Default parameters
-DEFAULT_START_DATE = '2014-09-01'
-DEFAULT_END_DATE = '2014-10-01'
-directory = '/data/sat/msg/nat/2014/09'
-log_dir = '/home/dcorradi/Documents/Codes/MSG-SEVIRI/download/log' 
+DEFAULT_START_DATE = '2022-04-01'
+DEFAULT_END_DATE = '2022-05-01'
+directory = '/data/sat/msg/rapid_scan/nat/2022/04/'
+msg_res = 5
+log_dir = os.path.join(dir_path, 'log')
 format = 'msgnative' 
 
-def generate_timestamps(start_date, end_date):
+def generate_timestamps(start_date, end_date, msg_res=15):
     """Generates all 15-minute intervals between start_date and end_date."""
-    delta = timedelta(minutes=15)
+    delta = timedelta(minutes=msg_res)
     current = start_date
     while current <= end_date:
         yield current
         current += delta
 
-def round_to_nearest_15_minutes(dt):
-    # Rounds datetime to the nearest 15 minutes
-    minute = (dt.minute // 15) * 15
-    rounding_threshold = (dt.minute % 15) > 7
+def round_down_to_msg_timestamp(dt, msg_res=15):
+
+    # Rounds minutes down to msg_res
+    minute = (dt.minute // msg_res) * msg_res
+    if msg_res == 15:
+        rounding_threshold = (dt.minute % msg_res) > 7
+    elif msg_res == 5:
+        rounding_threshold = (dt.minute % msg_res) > 2
     new_minute = minute + 15 if rounding_threshold else minute
     rounded_time = dt.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=new_minute)
     
     # Subtract 15 minutes after rounding
-    adjusted_time = rounded_time - timedelta(minutes=15)
+    adjusted_time = rounded_time - timedelta(minutes=msg_res)
     return adjusted_time
 
 
@@ -98,9 +106,9 @@ def get_all_files_in_directory(directory, file_format):
         return glob.glob(f'{directory}/**/*.nat', recursive=True)
     
 
-def list_missing_timestamps(start_date, end_date, directory, format, expected_files_per_interval=1):
+def list_missing_timestamps(start_date, end_date, directory, msg_res, format, expected_files_per_interval=1):
     # Generate all 15-minute timestamps between start_date and end_date
-    all_timestamps = list(generate_timestamps(start_date, end_date))
+    all_timestamps = list(generate_timestamps(start_date, end_date, msg_res=msg_res))
     #print(all_timestamps)
 
     # read in all filenames in directory (and subdirectories)
@@ -113,7 +121,7 @@ def list_missing_timestamps(start_date, end_date, directory, format, expected_fi
         try:
             datestring = find_date_string(f,format)
             timestamp = datetime.strptime(datestring, '%Y%m%d%H%M')
-            timestamp = round_to_nearest_15_minutes(timestamp)
+            timestamp = round_down_to_msg_timestamp(timestamp, msg_res=msg_res)
             file_counts[timestamp] += 1
             #print(timestamp)
         except (ValueError, IndexError):
@@ -125,19 +133,22 @@ def list_missing_timestamps(start_date, end_date, directory, format, expected_fi
     return missing_timestamps
 
 
-
+# %%
 if __name__ == "__main__":
     start_date = datetime.strptime(sys.argv[1] if len(sys.argv) > 1 else DEFAULT_START_DATE, '%Y-%m-%d')
     end_date = datetime.strptime(sys.argv[2] if len(sys.argv) > 2 else DEFAULT_END_DATE, '%Y-%m-%d')
-    
-    missing_timestamps = list_missing_timestamps(start_date, end_date, directory, format)
+
+    missing_timestamps = list_missing_timestamps(start_date, end_date, directory, msg_res, format)
     output_file = os.path.join(log_dir, "missing_timestamps.txt")
     
     with open(output_file, 'w') as f:
+        f.write(f"{len(missing_timestamps)} missing timestamps found between {start_date} and {end_date}:\n")
         for ts in missing_timestamps:
             f.write(ts.strftime('%Y-%m-%d %H:%M:%S') + "\n")
     
-    print(f"Missing timestamps written to {output_file}")
+    print(f"{len(missing_timestamps)} missing timestamps written to {output_file}")
 
 
 
+
+# %%
