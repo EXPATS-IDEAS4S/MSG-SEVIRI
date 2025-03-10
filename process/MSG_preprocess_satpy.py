@@ -370,7 +370,7 @@ if __name__ == "__main__":
     #compute timestamps of the period
     begin_date = f"{year}.{month:02d}.01"
     end_date = f"{year}.{month+1:02d}.01" #end point is excluded. CAREFUL! this only works for months except december
-    timestamps = compute_timestamps_from_time_range(begin_date,end_date)   
+    timestamps = compute_timestamps_from_time_range(begin_date, end_date, time_interval=msg_res)   
     print(f'total number of timestamps in {begin_date}-{end_date}: {len(timestamps)}')
 
     #open all MSG files in directory 
