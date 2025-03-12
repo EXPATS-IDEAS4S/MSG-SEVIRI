@@ -57,6 +57,7 @@ LOG_DIR="${SCRIPT_DIR}log/"
 # Define product details
 # PRODUCT="EO:EUM:DAT:MSG:HRSEVIRI" # standard msg files (15 mins res)
 PRODUCT="EO:EUM:DAT:MSG:MSG15-RSS" # high rate scans
+FORMAT="msgnative"
 
 # define path to yaml file containing the customization chain
 CHAIN_FILE=${SCRIPT_DIR}"/customization_settings/hrseviri_expats_108_62_39.yaml"
