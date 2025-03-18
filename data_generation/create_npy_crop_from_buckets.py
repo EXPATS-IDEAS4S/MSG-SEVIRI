@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 import xarray as xr
 
 from cropping_functions import crops_nc_random, crops_nc_fixed, filter_by_domain, filter_by_time
-
+from credentials_buckets import S3_BUCKET_NAME, S3_ACCESS_KEY, S3_SECRET_ACCESS_KEY, S3_ENDPOINT_URL
 
 def read_file(s3, file_name, bucket):
     """Upload a file to an S3 bucket
@@ -24,12 +24,6 @@ def read_file(s3, file_name, bucket):
         logging.error(e)
         return None
     return myObject
- 
-# Initializing variables for the client
-S3_BUCKET_NAME = "expats-msg-training"  #Fill this in l
-S3_ACCESS_KEY = "8aef2cea93fa46a28ebc43a906a5f2ce"  #Fill this in 
-S3_SECRET_ACCESS_KEY = "b84d267a7c0a483985b320d61714d805"  #Fill this in 
-S3_ENDPOINT_URL = "https://s3.waw3-1.cloudferro.com"  #Fill this in
 
 
 # Initialize the S3 client

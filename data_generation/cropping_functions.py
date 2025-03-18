@@ -6,56 +6,6 @@ import os
 import PIL
 
 
-def crops_nc_fixed(ds_image, x_pixel, y_pixel, crop_positions, filename, out_path):
-    """
-    Generates fixed crops from the input dataset and saves them in NetCDF and TIFF formats.
-
-    This function takes an input dataset, generates fixed crops based on specified positions,
-    and saves the crops as NetCDF files to preserve the original values and coordinates.
-
-    :param ds_image: xarray.Dataset or xarray.DataArray
-        The input dataset containing the image data along with latitude and longitude coordinates.
-    :param x_pixel: int
-        The width of the crop in pixels.
-    :param y_pixel: int
-        The height of the crop in pixels.
-    :param crop_positions: list of tuples
-        List of tuples, where each tuple contains the (lat, lon) of the upper-left corner of a crop.
-    :param filename: str
-        The base filename for saving the cropped images.
-    :param out_path: str
-        The output directory where the cropped images will be saved.
-    
-    :return: None
-    """
-    for i, (lat_ul, lon_ul) in enumerate(crop_positions):
-        #print(f"lat: {lat_ul}, lon: {lon_ul}")
-        # Find indices of the upper-left lat/lon in the dataset
-        x1 = int((lon_ul - ds_image.lon.values.min()) / (ds_image.lon.values[1] - ds_image.lon.values[0]))
-        y1 = int((lat_ul - ds_image.lat.values.min()) / (ds_image.lat.values[1] - ds_image.lat.values[0]))
-
-        # Calculate crop boundaries
-        latmax = ds_image.lat.values[y1]
-        latmin = ds_image.lat.values[y1 - y_pixel + 1]
-        lonmin = ds_image.lon.values[x1]
-        lonmax = ds_image.lon.values[x1 + x_pixel - 1]
-        #print([lonmin, lonmax, latmin, latmax])
-
-        # Crop the dataset
-        ds_crop = filter_by_domain(ds_image, [lonmin, lonmax, latmin, latmax])
-
-        #check if the crop contains any Nan
-        isnan_ds = xr.DataArray.isnull(xr.DataArray.sum(ds_crop,skipna=False))
-
-        if isnan_ds==False:
-            # Save the crop as NetCDF
-            nc_path = f"{out_path}/nc/{filename}_{i}.nc"
-            ds_crop.to_netcdf(nc_path)
-            print(f"{nc_path} saved")
-
-
-
-def crops_nc_random(ds_image, x_pixel, y_pixel, n_sample, filename, out_path):
 def crops_nc_fixed(ds_image, x_pixel, y_pixel, crop_positions, filename, out_path, file_type = 'nc'):
     """
     Generates fixed crops from the input dataset and saves them in NetCDF and TIFF formats.
