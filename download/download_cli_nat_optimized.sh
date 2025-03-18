@@ -36,9 +36,9 @@ script_start_time=$(date +%s)
 ##### CONFIG PARAMETERS
 
 # Default values for START_TIME, END_TIME, and DOWNLOAD_DIR
-default_start_time="2022-09-01T00:00"
-default_end_time="2022-09-01T00:10"
-default_download_dir="/data/sat/msg/rapid_scan/nat/2022/09/"
+default_start_time="2023-04-01T00:00"
+default_end_time="2023-05-01T00:10"
+default_download_dir="/data/sat/msg/rapid_scan/nat/2023/04/"
 
 ##### CONFIG PARAMETERS
 #######################
@@ -57,11 +57,18 @@ LOG_DIR="${SCRIPT_DIR}log/"
 # Define product details
 # PRODUCT="EO:EUM:DAT:MSG:HRSEVIRI" # standard msg files (15 mins res)
 PRODUCT="EO:EUM:DAT:MSG:MSG15-RSS" # high rate scans
+FORMAT="msgnative"
 
 # define path to yaml file containing the customization chain
 CHAIN_FILE=${SCRIPT_DIR}"/customization_settings/hrseviri_expats_108_62_39.yaml"
 # CHAIN_FILE=${SCRIPT_DIR}"/customization_settings/hrseviri_expats.yaml"
 
+
+# Execute the Python script to get credentials
+credentials=$(python ${SCRIPT_DIR}credentials.py) # <<<<<<<<<<<<<<<<<<<
+
+#######################
+#######################
 # print information on download settings
 echo "Using START_TIME: $START_TIME"
 echo "Using END_TIME: $END_TIME"
@@ -70,9 +77,6 @@ echo "Using customization chain from file: $CHAIN_FILE"
 
 # Number of files to process at a time
 batch_size=10
-
-# Execute the Python script to get credentials
-credentials=$(python ${SCRIPT_DIR}credentials.py)
 
 # Use an array to split the credentials output
 readarray -td' ' cred_array <<<"$credentials"; declare -p cred_array

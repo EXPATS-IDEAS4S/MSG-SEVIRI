@@ -30,7 +30,7 @@ channels_unit = ['Reflectances (%)', 'Brightness Temperature (K)', 'Brightness T
 channels_cmaps = ['gray', 'cool', 'cool', 'cool', 'cool', 'cool', 'cool', 'gray', 'gray', 'cool', 'cool']
 
 # Flag to perform parallax correction
-parallax_correction = False
+parallax_correction = True
 
 # Flag for regular gridding
 regular_grid = True
@@ -39,6 +39,9 @@ interp_method = 'nearest'
 
 # MSG time resolution
 msg_res = 5
+
+# cth time resolution
+cth_res = 15
 
 #Satpy reader for MSG data and cth
 msg_reader = 'seviri_l1b_native'
