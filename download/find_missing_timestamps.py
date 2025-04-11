@@ -31,9 +31,9 @@ from collections import defaultdict
 dir_path = os.path.dirname(os.path.abspath(__file__))
 
 # Default parameters
-DEFAULT_START_DATE = '2022-04-01'
-DEFAULT_END_DATE = '2022-05-01'
-directory = '/data/sat/msg/rapid_scan/nat/2022/04/'
+DEFAULT_START_DATE = '2021-06-01'
+DEFAULT_END_DATE = '2021-07-01'
+directory = '/data/sat/msg/rapid_scan/nat/2021/06/'
 msg_res = 5
 log_dir = os.path.join(dir_path, 'log')
 format = 'msgnative' 
@@ -42,24 +42,27 @@ def generate_timestamps(start_date, end_date, msg_res=15):
     """Generates all 15-minute intervals between start_date and end_date."""
     delta = timedelta(minutes=msg_res)
     current = start_date
-    while current <= end_date:
+    while current < end_date:
         yield current
         current += delta
 
 def round_down_to_msg_timestamp(dt, msg_res=15):
-
-    # Rounds minutes down to msg_res
-    minute = (dt.minute // msg_res) * msg_res
-    if msg_res == 15:
-        rounding_threshold = (dt.minute % msg_res) > 7
-    elif msg_res == 5:
-        rounding_threshold = (dt.minute % msg_res) > 2
-    new_minute = minute + 15 if rounding_threshold else minute
-    rounded_time = dt.replace(minute=0, second=0, microsecond=0) + timedelta(minutes=new_minute)
+    """
+    Rounds down a datetime object to the nearest 5-minute interval.
     
-    # Subtract 15 minutes after rounding
-    adjusted_time = rounded_time - timedelta(minutes=msg_res)
-    return adjusted_time
+    Parameters:
+        dt (datetime): The datetime object to round down.
+        msg_res (int): The resolution in minutes to round down to. Default is 15 minutes.
+    
+    Returns:
+        datetime: The rounded-down datetime object.
+    """
+    # Calculate the number of minutes to subtract to reach the nearest 5-minute interval
+    minutes_to_subtract = dt.minute % msg_res
+    rounded_time = dt - timedelta(minutes=minutes_to_subtract, 
+                                  seconds=dt.second, 
+                                  microseconds=dt.microsecond)
+    return rounded_time
 
 
 def find_date_string(filename, file_format):
@@ -103,7 +106,7 @@ def get_all_files_in_directory(directory, file_format):
     #TODO: add for extension of other formats
     # For 'msgnative' format
     if file_format == 'msgnative':
-        return glob.glob(f'{directory}/**/*.nat', recursive=True)
+        return sorted(glob.glob(f'{directory}/**/*.nat', recursive=True))
     
 
 def list_missing_timestamps(start_date, end_date, directory, msg_res, format, expected_files_per_interval=1):
