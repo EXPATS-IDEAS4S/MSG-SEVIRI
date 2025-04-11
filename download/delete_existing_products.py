@@ -1,16 +1,15 @@
+# %%
 # check_file_presence.py
 import os
 import sys
 import logging
 import glob
 
+# %%
 def timestamp_from_file(file, format):
     # filename after costumization depends on the format:
     if format == 'msgnative':
         #nat filenames example: MSG3-SEVI-MSG15-0100-NA-20230731215741.559000000Z-NA.subset.nat
-        print(file)
-        print(file.split('.')[0])
-        print(file.split('.')[0].split('-'))
         file_timestamp = file.split('.')[0].split('-')[5]
 
     elif format == 'netcdf4':
@@ -46,6 +45,7 @@ def timestamp_from_product(product_name):
     product_timestamp = product_name.split('.')[0].split('-')[-1]
     return product_timestamp
 
+# %%
 def delete_existing_products(product_file, download_dir, format):
 
     # if download_dir does not even exists - no files will exists so return without deleting any products
@@ -54,7 +54,7 @@ def delete_existing_products(product_file, download_dir, format):
     
     # read all timestamps of existing files
     existing_timestamps = get_existing_timestamps(download_dir, format)
-    print('existing timestamps', len(existing_timestamps), existing_timestamps[:2])
+    print('existing timestamps', len(existing_timestamps))
 
     # read all products that are planned to be downloaded
     with open(product_file, "r") as f:
@@ -63,18 +63,15 @@ def delete_existing_products(product_file, download_dir, format):
     print("products before deleting", len(products))
 
     products_to_download = [p for p in products if timestamp_from_product(p) not in existing_timestamps]
+    print("products after deleting", len(products_to_download))
 
     # write those that still need to be downloaded to same file
     with open(product_file, "w") as prod_file:
-        for prod in products:
-            # if timestamp is not existing
-            if timestamp_from_product(prod) not in existing_timestamps:
-                # write to file
-                prod_file.write(prod)
-                
-    print('products', len(products_to_download))
+        for prod in products_to_download:
+            prod_file.write(prod)
 
 
+# %%
 if __name__ == "__main__":
     # Arguments passed from bash script
     product_file = sys.argv[1].strip()
@@ -83,3 +80,4 @@ if __name__ == "__main__":
 
     delete_existing_products(product_file, download_dir, format)
     print("successfully deleted existing products.")
+# %%
