@@ -11,7 +11,7 @@ def create_gif_from_images(folder_path, output_gif_path, duration=500):
     - duration: int, duration in milliseconds between frames in the GIF.
     """
     # Get a list of all JPEG images in the folder, sorted by filename
-    image_files = sorted([f for f in os.listdir(folder_path) if f.endswith('.jpeg') and f.startswith('CMA')])
+    image_files = sorted([f for f in os.listdir(folder_path) if f.endswith('.png') ])
 
     # Create a list to store the images
     images = []
@@ -36,7 +36,7 @@ def create_gif_from_images(folder_path, output_gif_path, duration=500):
         print("No images found in the specified folder.")
 
 # Example usage:
-folder_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/full_domain_figs/IR_108_5th-95th'
-output_gif_path = '/data/sat/msg/ml_train_crops/IR_108-WV_062-IR_039_2013-2014_128x128_EXPATS/full_domain_figs/CMA_IR_108_5th-95th.gif'
+folder_path = '/data1/crops/npy_crops_test/png'
+output_gif_path = '/data1/crops/npy_crops_test/png/IR_108_07-07-2014_expats.gif'
 
 create_gif_from_images(folder_path, output_gif_path, duration=500)

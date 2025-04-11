@@ -6,7 +6,7 @@ import os
 import PIL
 
 
-def crops_nc_fixed(ds_image, x_pixel, y_pixel, crop_positions, filename, out_path):
+def crops_nc_fixed(ds_image, x_pixel, y_pixel, crop_positions, filename, out_path, file_type = 'nc'):
     """
     Generates fixed crops from the input dataset and saves them in NetCDF and TIFF formats.
 
@@ -49,9 +49,21 @@ def crops_nc_fixed(ds_image, x_pixel, y_pixel, crop_positions, filename, out_pat
 
         if isnan_ds==False:
             # Save the crop as NetCDF
-            nc_path = f"{out_path}/nc/{filename}_{i}.nc"
-            ds_crop.to_netcdf(nc_path)
-            print(f"{nc_path} saved")
+            if file_type == 'nc':
+                nc_path = f"{out_path}/nc/{filename}_{i}.nc"
+                ds_crop.to_netcdf(nc_path)
+                print(f"{nc_path} saved")
+            elif file_type == 'npy':
+                npy_path = f"{out_path}/{filename}_{i}.npy"
+                #print(ds_crop)
+                #print(ds_crop.to_array()[0,:,:,:].values)	
+                array_to_save = ds_crop.to_array()[0,:,:,:].values  
+                #save if do not cantain any Nan
+                if not np.isnan(array_to_save).any(): 
+                    np.save(npy_path, array_to_save)
+                    print(f"{npy_path} saved")
+            else:
+                raise ValueError(f"Invalid file type: '{file_type}'")
 
 
 
