@@ -3,12 +3,11 @@
 code to plot distributions of values of channels over expats domain
 """
     
-    
+from readers.cm_saf import read_CM_SAF, read_lat_lon_CMSAF
 from readers.msg_ncdf import read_ncdf, read_orography, read_lat_lon_file
-
-from readers.files_dirs import path_figs, path_dir_tree, raster_filename, orography_file
+from readers.files_dirs import path_figs, path_dir_tree, raster_filename, orography_file, CM_SAF_path
 from figures.domain_info import domain_expats, domain_dfg
-from figures.mpl_style import CMAP, plot_cities_expats, plot_local_dfg
+from figures.mpl_style import CMAP, CMAP_an, plot_cities_expats, plot_local_dfg
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.patches as mpatches
@@ -17,61 +16,82 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import rasterio
-
-
+import shutil
+import glob
+import itertools
 def main():
     
-# read data of the month of july
+    # read data of the month of july
     yy_arr = ['2023'] # processed years 2022
     mm_arr = ['04', '05', '06', '07', '08', '09']
     
-    # loop on years and months for plotting percentiles
     for yy in yy_arr:
         for mm in mm_arr:
-                
+            
             print(yy,mm)
-            # loop on days
-            # reading input files
-            data = read_ncdf(path_dir_tree+'/'+yy+'/'+mm+'/', "IR_108")
             
-            # reading dimensions of the data
-            n_samples, dim_y, dim_x = np.shape(data.IR_108.values)
-            print('number of time samples ', n_samples)
-            print('calculating percentile')
-                    
-            # calculate 10th percentile
-            data_variable = data['IR_108']
-            data_variable = data_variable.chunk({'time': len(data_variable.time)})
-            #q10 = data_variable.quantile(0.1, "time")
-            #q50 = data_variable.quantile(0.5, "time")
-            q05 = data_variable.quantile(0.05, "time")
+            # remove daily folder structure if yy is 2022
+            #file_list = []
+            #if yy == '2022':
+            #    subfolders= [f.path for f in os.scandir(CM_SAF_path+yy+'/'+mm+'/') if f.is_dir()]
+            #    for dir in subfolders:
+            #        print(dir)
+            #        files = (glob.glob(dir+'/*.nc'))
+            #        file_list.append(files)
+                
+                
+            #    file_list = list(itertools.chain.from_iterable(file_list))
+            #    print(file_list)
+                # moving files in the month subfolder
+            #    [shutil.move(file_day, CM_SAF_path+yy+'/'+mm+'/') for file_day in file_list]
 
-            #print(np.shape(IR_108_10perc))    
-            #print(np.nanmax(q10), np.nanmin(q10))
+                
             
-            # plot 10percentile
-            print('plot map of percentile')
-            lons, lats = read_lat_lon_file()
+            # read CM_SAF CM data of the month 
+            CM_saf = read_CM_SAF(CM_SAF_path+yy+'/'+mm+'/')
             
-            #map_percentiles(IR_108_10perc, data.lat.values, data.lon.values, domain_expats, path_figs)
-            plot_msg(lons, lats, q05, '5th percentiles 10.8 micron', CMAP,  '5th percentiles 10.8 micron', domain_expats, path_figs, 'expats', True, vmin, vmax)
-            plot_msg(lons, lats, q05, '5th percentiles 10.8 micron', CMAP,  '5th percentiles 10.8 micron', domain_dfg, path_figs, 'dfg', True, vmin, vmax)
+            print(CM_saf)
+            
+            # calculating mean cloud probability
+            CP_mean = CM_saf.cma_prob.mean(dim='time', skipna=True)
 
-def calc_mid_points_pairs_array(x):
-    """
-    given x, it produces an array containing mean of each pair of consecutive values of x
-    args:
-    - x input array
-    returns:
-    - y array of mean values
-    
-    """    
-    y = (x[1:] + x[:-1]) / 2
-    print(len(x), len(y))
-    return y
+            # calculating counts for cloud mask flag
+            CC_count = CM_saf.cma.sum(dim='time')
+            CC_count_norm = CC_count/np.nanmax(CC_count)
+            
+            # read lat/lon values
+            lats, lons = read_lat_lon_CMSAF(CM_SAF_path) 
 
-
-def plot_msg(lons, lats, variable, label, cmap, cbar_title, domain, path_out, key, back_transparent, vmin, vmax):
+            # plot mean cloud prob
+            #plot_cmsaf(lons,
+            #        lats, 
+            #        CP_mean, 
+            #        yy+mm+"_cloud probability", 
+            #        CMAP_an, 
+            #        "Cloud probability", 
+            #        domain_expats, 
+            #        path_figs,
+            #        'expats', 
+            #        True, 
+            #        0., 
+            #        100.)
+            
+            # plot cloud counts
+            plot_cmsaf(lons,
+                    lats, 
+                    CC_count_norm, 
+                    yy+mm+"_cloud counts", 
+                    CMAP_an, 
+                    "Cloud counts", 
+                    domain_dfg, 
+                    path_figs,
+                    'dfg', 
+                    True, 
+                    np.nanmin(CC_count_norm), 
+                    np.nanmax(CC_count_norm))
+            
+            
+def plot_cmsaf(lons, lats, variable, label, cmap, cbar_title, domain, path_out, key, back_transparent, vmin, vmax):
     """
     plot map of the variable over the defined domain
 
@@ -95,7 +115,6 @@ def plot_msg(lons, lats, variable, label, cmap, cbar_title, domain, path_out, ke
     
     """
     
-
     
     # Plot the map of MSG channels vs lat/lon
     fig = plt.figure(figsize=(10,10))
@@ -175,7 +194,7 @@ def plot_msg(lons, lats, variable, label, cmap, cbar_title, domain, path_out, ke
 
     elif key == 'expats':
         var_levels = np.linspace(vmin, vmax, 20)
-        # plot 10th percentile as filled contours
+        # plot variable as filled contours
         mesh = ax.contourf(lons, 
                             lats, 
                             variable, 
@@ -220,7 +239,8 @@ def plot_msg(lons, lats, variable, label, cmap, cbar_title, domain, path_out, ke
     plt.close()
 
 
-    
+
+
 if __name__ == "__main__":
     main()
-    
+        

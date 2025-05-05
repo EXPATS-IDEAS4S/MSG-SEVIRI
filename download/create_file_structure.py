@@ -26,7 +26,7 @@ if files == "msg":
 elif files == "cth_cmsaf":
     # find name of dir of the folder of downloaded files
     import os
-    path_incoming = '/data/sat/msg/CM_SAF/' # list of subdirectories and files    
+    path_incoming = '/data/sat/msg/CM_SAF/ORD54718/' # list of subdirectories and files    
     path_destination = '/data/sat/msg/CM_SAF/'
     file_list = np.sort(glob.glob(path_incoming+'*.nc'))
     len_path = len(path_incoming)
@@ -35,6 +35,19 @@ elif files == "cth_cmsaf":
     dates = [file[len_str_before+len_path:len_str_before+len_path+N] for file in file_list]
     print(dates)
 
+elif files == "cm_cmsaf":
+    # find name of dir of the folder of downloaded files
+    import os
+    path_incoming = '/net/ostro/CM_SAF/2023/' # list of subdirectories and files    
+    path_destination = '/net/ostro/CM_SAF/2023/'
+    file_list = np.sort(glob.glob(path_incoming+'*.nc'))
+    len_path = len(path_incoming)
+    len_str_before = len('CMAin')
+    N = len('20230404')
+    dates = [file[len_str_before+len_path:len_str_before+len_path+N] for file in file_list]
+    print(dates)
+    
+    
 # loop on all dates to move files in the right folder
 for date in dates:
     
@@ -52,7 +65,9 @@ for date in dates:
         files_day = np.sort(glob.glob(path_incoming+'MSG3-SEVI-MSG15-0100-NA-'+date+'*.nat'))
     elif files == "cth_cmsaf":
         files_day = np.sort(glob.glob(path_incoming+'CTXin'+date+'*.nc'))
-
+    elif files == "cm_cmsaf":
+        files_day = np.sort(glob.glob(path_incoming+'CMAin'+date+'*.nc'))
+        
     # moving all files in the day folder
     [shutil.move(file_day, path_destination+yy+'/'+mm+'/'+dd+'/') for file_day in files_day]
     

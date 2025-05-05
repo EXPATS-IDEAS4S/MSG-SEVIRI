@@ -51,3 +51,7 @@ def extract_yymmdd(date):
     mm = date[4:6]
     dd = date[6:8]
     return yy, mm, dd
+
+
+# file path for cloud mask files (temporary)
+CM_SAF_path = '/net/ostro/CM_SAF/'

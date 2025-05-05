@@ -72,27 +72,33 @@ def plot_local_dfg(ax, color, symbol_size):
     Penegal = [46.43921, 11.2155]
     Tarmeno = [46.34054, 11.2545]
     Vilpiano = [46.55285, 11.20195]
-    Sarntal = [46.56611, 11.51642]
+    Sarntal = [46.6412136, 11.3541082]
     Cles_Malgolo = [46.38098, 11.08136]
     trento = [46.0667, 11.1167] #lat, lon
     bolzano = [46.4981, 11.3548]  
+    Soprabolzano = [46.5222, 11.3871]
+    Corno_renon = [46.615, 11.460833]
     
      
     ax.scatter(trento[1], trento[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())
     ax.scatter(bolzano[1], bolzano[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())
-    ax.scatter(Penegal[1], Penegal[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())
-    ax.scatter(Cles_Malgolo[1], Cles_Malgolo[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())                        
-    ax.scatter(Tarmeno[1], Tarmeno[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())            
+    #ax.scatter(Penegal[1], Penegal[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())
+    #ax.scatter(Cles_Malgolo[1], Cles_Malgolo[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())                        
+    #ax.scatter(Tarmeno[1], Tarmeno[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())            
     ax.scatter(Vilpiano[1], Vilpiano[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())            
     ax.scatter(Sarntal[1], Sarntal[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())            
+    ax.scatter(Soprabolzano[1], Soprabolzano[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())            
+    ax.scatter(Corno_renon[1], Corno_renon[0], marker='x', color=color, s=symbol_size, transform=ccrs.PlateCarree())
 
     ax.text(trento[1] + 0.02, trento[0] - 0.02, 'Trento', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
     ax.text(bolzano[1] + 0.02, bolzano[0] - 0.02, 'Bolzano', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
-    ax.text(Penegal[1] + 0.02, Penegal[0] - 0.02, 'Penegal', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
-    ax.text(Cles_Malgolo[1] + 0.02, Cles_Malgolo[0] - 0.02, 'Cles_Malgolo', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
-    ax.text(Tarmeno[1] + 0.02, Tarmeno[0] - 0.02, 'Tarmeno', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
+    #ax.text(Penegal[1] + 0.02, Penegal[0] - 0.02, 'Penegal', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
+    #ax.text(Cles_Malgolo[1] + 0.02, Cles_Malgolo[0] - 0.02, 'Cles_Malgolo', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
+    #ax.text(Tarmeno[1] + 0.02, Tarmeno[0] - 0.02, 'Tarmeno', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
     ax.text(Vilpiano[1] + 0.02, Vilpiano[0] - 0.02, 'Vilpiano', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
-    ax.text(Sarntal[1] + 0.02, Sarntal[0] - 0.02, 'Sarntal', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
-    
+    ax.text(Sarntal[1] + 0.02, Sarntal[0] + 0.02, 'Sarntal', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
+    ax.text(Soprabolzano[1] + 0.02, Soprabolzano[0] - 0.02, 'Soprabolzano', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
+    ax.text(Corno_renon[1] + 0.02, Corno_renon[0] - 0.02, 'Corno del Renon', color=color, transform=ccrs.PlateCarree(), ha='left', va='top')
+
     return
 
