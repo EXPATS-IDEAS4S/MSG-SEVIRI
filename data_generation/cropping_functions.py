@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import PIL
+from scipy.ndimage import binary_closing
 
 
 def crops_nc_fixed(ds_image, x_pixel, y_pixel, crop_positions, filename, out_path, file_type = 'nc'):
@@ -67,7 +68,7 @@ def crops_nc_fixed(ds_image, x_pixel, y_pixel, crop_positions, filename, out_pat
 
 
 
-def crops_nc_random(ds_image, x_pixel, y_pixel, n_sample, filename, out_path):
+def crops_nc_random(ds_image, x_pixel, y_pixel, n_sample, filename, out_path, file_type = 'nc'):
     """
     Generates multiple random crops from the input dataset, saves them in NetCDF and TIFF formats.
 
@@ -115,12 +116,33 @@ def crops_nc_random(ds_image, x_pixel, y_pixel, n_sample, filename, out_path):
 
         #check if the crop contains any Nan
         isnan_ds = xr.DataArray.isnull(xr.DataArray.sum(ds_crop,skipna=False))
+        #if not ds_crop.to_array().isnull().any().item():
 
         if isnan_ds==False:
             #save the crops in nc format to keep actual values and lat/lon coordinates
-            ds_crop.to_netcdf(out_path+'nc/'+filename+"_"+str(i)+'.nc')
-            
-            print(out_path+'nc/'+filename+"_"+str(i), 'saved')
+            filepath = out_path+'/'+filename+"_"+str(i)+'.'+file_type
+            #print(filepath)
+
+            if file_type == 'nc':
+                encoding = {
+                                var: {
+                                    'zlib': True,
+                                    'complevel': 9,
+                                    'dtype': ds_crop[var].dtype.name  # preserve original dtype (e.g., 'float32', 'int16')
+                                } for var in ds_crop.data_vars
+                            }
+                ds_crop.to_netcdf(filepath, encoding=encoding, engine="h5netcdf")
+            elif file_type == 'npy':
+                #print(ds_crop.to_array().values.shape)
+                array_to_save = ds_crop.to_array()[0,:,:].values
+                np.save(filepath, array_to_save)
+            else:
+                raise ValueError(f"Invalid file type: '{file_type}'")
+
+            print(out_path+'/'+filename+"_"+str(i), 'saved')
+
+        #close the dataset to free resources
+        ds_crop.close()
 
 
 def filter_by_domain(ds, domain):
@@ -393,3 +415,33 @@ def convert_crops_to_images_1band(ds_image, x_pixel, y_pixel, filename, format, 
     image.save(crop_filepath)
 
     print(f'{crop_filepath} is saved')
+
+
+def apply_cma_mask(ds_day, ds_day_var, value_max):
+    """
+    Applies binary closing to each time slice of the 'cma' field in ds_day,
+    and updates 'ir_108' in ds_day_var accordingly at each timestamp.
+
+    Parameters:
+    - ds_day: xarray Dataset with dimensions (T, lat, lon) containing 'cma'.
+    - ds_day_var: xarray Dataset with the same time dimension, containing 'ir_108'.
+    - cloud_prm: list of strings indicating which cloud parameters are present.
+    - value_max: value to assign where closed CMA mask is 0.
+
+    Returns:
+    - Updated ds_day_var with masked 'ir_108' for each time step.
+    """
+    
+    structure = np.ones((3, 3), dtype=np.uint8)
+
+    for t in ds_day['time']:
+        cma_slice = ds_day['cma'].sel(time=t).values
+        closed_cma = binary_closing(cma_slice, structure=structure)
+
+        ir_108_slice = ds_day_var['IR_108'].sel(time=t)
+        masked_ir_108 = ir_108_slice.where(closed_cma == 1, value_max)
+
+        # Assign updated slice back to dataset
+        ds_day_var['IR_108'].loc[dict(time=t)] = masked_ir_108
+
+    return ds_day_var

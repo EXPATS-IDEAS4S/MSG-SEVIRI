@@ -4,9 +4,40 @@ import boto3
 import logging
 from botocore.exceptions import ClientError
 import xarray as xr
+from scipy.ndimage import binary_closing
+import numpy as np
 
 from cropping_functions import crops_nc_random, crops_nc_fixed, filter_by_domain, filter_by_time
 from credentials_buckets import S3_BUCKET_NAME, S3_ACCESS_KEY, S3_SECRET_ACCESS_KEY, S3_ENDPOINT_URL
+
+def apply_cma_mask(ds_day, ds_day_var, value_max):
+    """
+    Applies binary closing to each time slice of the 'cma' field in ds_day,
+    and updates 'ir_108' in ds_day_var accordingly at each timestamp.
+
+    Parameters:
+    - ds_day: xarray Dataset with dimensions (T, lat, lon) containing 'cma'.
+    - ds_day_var: xarray Dataset with the same time dimension, containing 'ir_108'.
+    - cloud_prm: list of strings indicating which cloud parameters are present.
+    - value_max: value to assign where closed CMA mask is 0.
+
+    Returns:
+    - Updated ds_day_var with masked 'ir_108' for each time step.
+    """
+    
+    structure = np.ones((3, 3), dtype=np.uint8)
+
+    for t in ds_day['time']:
+        cma_slice = ds_day['cma'].sel(time=t).values
+        closed_cma = binary_closing(cma_slice, structure=structure)
+
+        ir_108_slice = ds_day_var['IR_108'].sel(time=t)
+        masked_ir_108 = ir_108_slice.where(closed_cma == 1, value_max)
+
+        # Assign updated slice back to dataset
+        ds_day_var['IR_108'].loc[dict(time=t)] = masked_ir_108
+
+    return ds_day_var
 
 def read_file(s3, file_name, bucket):
     """Upload a file to an S3 bucket
@@ -41,17 +72,18 @@ for item in response['Contents']:
 
 
 #Directory with the data to uplad
-years = [2014]
-months = range(4,5)
+years = [2013, 2014]
+months = range(4,10)
 days = range(1,32)
 path_dir = f"/data/sat/msg/ml_train_crops/IR_108-WV_062-CMA_FULL_EXPATS_DOMAIN"
 basename = "merged_MSG_CMSAF"
 
 #Define crops setting
 
-cropping_strategy = 'fixed' #random or fixed
+cropping_strategy = 'random' #random or fixed
 n_samples = 1
 
+# Define the cropping area for fixed crops (upper left corner latitude and longitude)
 crop_ul_lon = 6.5
 crop_ul_lat = 50.0
 
@@ -63,19 +95,23 @@ hour_end = '24' #UTC (not included,
 
 # Define your range limits
 #TODO fix this in case more than one IR variable is included
-value_min = 200.0  # Example minimum value
+value_min = 180.0  # Example minimum value
 value_max = 320.0   # Example maximum value
  
-x_pixel = 200 
-y_pixel = 200 
+x_pixel = 100 
+y_pixel = 100 
 
 domain = lonmin, lonmax, latmin, latmax = 5, 16, 42, 51.5 #DC domain from the paper
 domain_name = 'EXPATS'
 
-cloud_prm = ['IR_108']
+cloud_prm = ['IR_108']#, 'WV_062', 'cma']#,'IR_039'] #'cot', WV_062, IR_039
+
+apply_cma = True #if True, the cma variable will be included in the crops
+
+file_extension = 'nc'  # File extension for the dataset files
 
 #output_path =  f'/work/dcorradi/crops/{cloud_prm_str}_{years_str}_{x_pixel}x{y_pixel}_{domain_name}_{cropping_strategy}/'
-outpath = '/data1/crops/npy_crops_test/1'
+outpath = f'/data1/crops/dcv2_ir108_100x100_test_tensor/{file_extension}/1'
 os.makedirs(outpath, exist_ok=True)
 
 for year in years:
@@ -91,17 +127,20 @@ for year in years:
                 #print(ds_day)
                 
                 #select only variable of interest
-                ds_day = ds_day[cloud_prm]         
+                ds_day_var = ds_day[cloud_prm]
+
+                if apply_cma and 'cma' in ds_day and 'IR_108' in cloud_prm:
+                    ds_day_var = apply_cma_mask(ds_day, ds_day_var, value_max)	
 
                 #select only data within certain domain
                 try:
-                    ds_day = filter_by_domain(ds_day, domain)
+                    ds_day_var = filter_by_domain(ds_day_var, domain)
                 except ValueError as e:
                     print(f"Skipping file '{file}' due to error: {e}")
                     continue  # Skip this file and move to the next
 
                 #extract timestamp
-                timestamps = ds_day.time.values
+                timestamps = ds_day_var.time.values
                 #print(timestamps)
 
                 #loop through each daily file
@@ -113,7 +152,7 @@ for year in years:
                 
                     #select the values for the current timestamp
                     try:
-                        ds_time = filter_by_time(ds_day,timestamp)
+                        ds_time = filter_by_time(ds_day_var,timestamp)
                     except ValueError as e:
                         print(f"Skipping file '{file}-{timestamp}' due to error: {e}")
                         continue  # Skip this file and move to the next
@@ -135,14 +174,17 @@ for year in years:
                     if not is_all_nan_ds and not is_outside_range and month >= month_start and month <= month_end and hour >= hour_start and hour < hour_end:          
 
                         # saving cropped images
-                        filename_to_save = file.split('/')[-1].split('.')[0]+'_'+str(timestamp).split('T')[1][0:5]+'_'+domain_name
+                        #filename_to_save = file.split('/')[-1].split('.')[0]+'_'+str(timestamp).split('T')[1][0:5]+'_'+domain_name
+                        filename_to_save = str(timestamp).split('.')[0]
                         #print(filename_to_save)
                         
                         if cropping_strategy == 'random':
-                            crops_nc_random(ds_time, x_pixel, y_pixel, n_samples, filename_to_save, outpath)
+                            crops_nc_random(ds_time, x_pixel, y_pixel, n_samples, filename_to_save, outpath, file_extension)
                         elif cropping_strategy == 'fixed':
                             #print('fixed')
-                            crops_nc_fixed(ds_time, x_pixel, y_pixel, [(crop_ul_lat,crop_ul_lon)], filename_to_save, outpath, 'npy')         
+                            crops_nc_fixed(ds_time, x_pixel, y_pixel, [(crop_ul_lat,crop_ul_lon)], filename_to_save, outpath, file_extension)         
                         else:
                             raise ValueError(f"Invalid cropping strategy: '{cropping_strategy}'")
          
+
+#nohup 3122484

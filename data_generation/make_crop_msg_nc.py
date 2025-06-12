@@ -41,9 +41,9 @@ from cropping_functions import crops_nc_random, crops_nc_fixed, filter_by_domain
 
 start_time = time.time()
 
-years = ['2013','2014','2015','2016'] #1 year is 17568 samples
+years = ['2013','2014','2015'] #1 year is 17568 samples
 
-cropping_strategy = 'fixed' #random or fixed
+cropping_strategy = 'random' #random or fixed
 
 month_start = '04' #April
 month_end = '09' #Septeber
@@ -52,8 +52,8 @@ hour_start = '00' #UTC (included)
 hour_end = '24' #UTC (not included, so if 18 it stop at 17.45, 24 will stop at 23.45 )
 
 # Define your range limits
-value_min = 200.0  # Example minimum value
-value_max = 320.0   # Example maximum value
+value_min = [180.0]  # Example minimum value
+value_max = [350.0]   # Example maximum value
  
 #pixels for the random crops
 #org_pixel = 128 #DC crops with pixel resolution 2x1 km --> aound 0.02°x0.01°?
