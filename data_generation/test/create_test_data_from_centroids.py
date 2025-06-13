@@ -79,4 +79,3 @@ def main(csv_path, outdir):
             continue
 
         crop_fixed_from_csv(ds_crop, meta["ul_lat"], meta["ul_lon"], meta, outdir)
-
