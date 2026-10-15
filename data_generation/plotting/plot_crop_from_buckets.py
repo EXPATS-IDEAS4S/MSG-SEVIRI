@@ -8,8 +8,12 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import sys
+
+sys.path.append('/home/Daniele/codes/MSG-SEVIRI')
 
 from cropping_functions import crops_nc_random, crops_nc_fixed, filter_by_domain, filter_by_time
+from credentials_buckets import S3_BUCKET_NAME, S3_ACCESS_KEY, S3_SECRET_ACCESS_KEY, S3_ENDPOINT_URL
 
 
 def read_file(s3, file_name, bucket):
@@ -28,12 +32,7 @@ def read_file(s3, file_name, bucket):
         logging.error(e)
         return None
     return myObject
- 
-# Initializing variables for the client
-S3_BUCKET_NAME = "expats-msg-training"  #Fill this in l
-S3_ACCESS_KEY = "8aef2cea93fa46a28ebc43a906a5f2ce"  #Fill this in 
-S3_SECRET_ACCESS_KEY = "b84d267a7c0a483985b320d61714d805"  #Fill this in 
-S3_ENDPOINT_URL = "https://s3.waw3-1.cloudferro.com"  #Fill this in
+
 
 
 # Initialize the S3 client
@@ -51,7 +50,7 @@ for item in response['Contents']:
 
 
 #Directory with the data to uplad
-years = [2014]
+years = [2024]
 months = range(7,8)
 days = range(7,8)
 path_dir = f"/data/sat/msg/ml_train_crops/IR_108-WV_062-CMA_FULL_EXPATS_DOMAIN"
@@ -82,10 +81,10 @@ value_max = 320.0   # Example maximum value
 domain = lonmin, lonmax, latmin, latmax = 5, 16, 42, 51.5 #DC domain from the paper
 domain_name = 'EXPATS'
 
-cloud_prm = ['IR_108']
+cloud_prm = ['IR_108', 'WV_062']
 
 #output_path =  f'/work/dcorradi/crops/{cloud_prm_str}_{years_str}_{x_pixel}x{y_pixel}_{domain_name}_{cropping_strategy}/'
-outpath = '/data1/crops/npy_crops_test/png/'
+outpath = '/sat_data/crops/msg_full_expats_domain/'
 os.makedirs(outpath, exist_ok=True)
 
 for year in years:

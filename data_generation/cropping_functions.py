@@ -52,7 +52,7 @@ def crops_nc_fixed(ds_image, x_pixel, y_pixel, crop_positions, filename, out_pat
             # Save the crop as NetCDF
             if file_type == 'nc':
                 nc_path = f"{out_path}/nc/{filename}_{i}.nc"
-                ds_crop.to_netcdf(nc_path)
+                ds_crop.to_netcdf(nc_path, engine="h5netcdf")
                 print(f"{nc_path} saved")
             elif file_type == 'npy':
                 npy_path = f"{out_path}/{filename}_{i}.npy"
@@ -112,7 +112,6 @@ def crops_nc_random(ds_image, x_pixel, y_pixel, n_sample, filename, out_path, fi
 
         #crop the dataset besed on the random x and y (the upper left point of the crop)
         ds_crop = filter_by_domain(ds_image,[lonmin, lonmax, latmin, latmax])
-        #print(ds_crop)
 
         #check if the crop contains any Nan
         isnan_ds = xr.DataArray.isnull(xr.DataArray.sum(ds_crop,skipna=False))
@@ -175,29 +174,23 @@ def filter_by_domain(ds, domain):
 
     return ds_masked
 
-def filter_by_time(ds, time):
-    """
-    Filters the input dataset based on a specified time.
 
-    This function applies a mask to the input dataset to include only the data
-    points that match the specified time. The masked dataset is then returned.
+def filter_by_time(ds, times):
+    """
+    Filters the input dataset based on a list of specified times.
 
     :param ds: xarray.Dataset or xarray.DataArray
         The input dataset containing the data to be filtered.
-    :param time: datetime-like object
-        The specific time for which the data should be filtered. This can be a 
-        datetime object or any other type compatible with the dataset's time coordinate.
+    :param times: datetime-like or list/array of datetimes
+        One or more times to filter the dataset by.
     
     :return: xarray.Dataset or xarray.DataArray
-        The dataset filtered by the specified time.
+        The dataset filtered by the specified times.
     """
-    #Find the mask
-    mask = (ds['time'] == time)
-    
-    # Apply the mask to the dataset
+    mask = ds['time'].isin(times)   # works with single or multiple timestamps
     ds_masked = ds.where(mask, drop=True)
-
     return ds_masked
+
 
 
 def compute_global_min_max(file_paths, variable):
@@ -417,7 +410,7 @@ def convert_crops_to_images_1band(ds_image, x_pixel, y_pixel, filename, format, 
     print(f'{crop_filepath} is saved')
 
 
-def apply_cma_mask(ds_day, ds_day_var, value_max):
+def apply_cma_mask(ds_day, ds_day_var, value_max, only_108=True):
     """
     Applies binary closing to each time slice of the 'cma' field in ds_day,
     and updates 'ir_108' in ds_day_var accordingly at each timestamp.
@@ -426,7 +419,7 @@ def apply_cma_mask(ds_day, ds_day_var, value_max):
     - ds_day: xarray Dataset with dimensions (T, lat, lon) containing 'cma'.
     - ds_day_var: xarray Dataset with the same time dimension, containing 'ir_108'.
     - cloud_prm: list of strings indicating which cloud parameters are present.
-    - value_max: value to assign where closed CMA mask is 0.
+    - value_max: list of value to assign where closed CMA mask is 0.
 
     Returns:
     - Updated ds_day_var with masked 'ir_108' for each time step.
@@ -438,10 +431,16 @@ def apply_cma_mask(ds_day, ds_day_var, value_max):
         cma_slice = ds_day['cma'].sel(time=t).values
         closed_cma = binary_closing(cma_slice, structure=structure)
 
-        ir_108_slice = ds_day_var['IR_108'].sel(time=t)
-        masked_ir_108 = ir_108_slice.where(closed_cma == 1, value_max)
-
-        # Assign updated slice back to dataset
-        ds_day_var['IR_108'].loc[dict(time=t)] = masked_ir_108
-
+        if only_108:
+            # Only apply mask to 'IR_108'
+            ir_108_slice = ds_day_var['IR_108'].sel(time=t)
+            masked_ir_108 = ir_108_slice.where(closed_cma == 1, value_max[0])
+            ds_day_var['IR_108'].loc[dict(time=t)] = masked_ir_108
+        else:
+            # Apply mask to all variables in ds_day_var, apply for each variable the corresponding value_max
+            for var, val_mask in zip(ds_day_var.data_vars, value_max):
+                var_slice = ds_day_var[var].sel(time=t)
+                masked_var = var_slice.where(closed_cma == 1, val_mask)
+                ds_day_var[var].loc[dict(time=t)] = masked_var
+        
     return ds_day_var

@@ -37,4 +37,4 @@ def remove_nc_files_with_nan(root_dir):
     return removed_files
 
 
-remove_nc_files_with_nan("/data1/crops/dcv2_ir108_100x100_test_tensor/nc/1")
+remove_nc_files_with_nan("/data1/crops/dcv2_ir108_OT_100x100_35k_nc/nc/1")

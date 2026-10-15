@@ -6,7 +6,7 @@ from datetime import datetime
 
 from cropping_functions import crops_nc_random, crops_nc_fixed, filter_by_domain, filter_by_time, apply_cma_mask
 from credentials_buckets import S3_BUCKET_NAME, S3_ACCESS_KEY, S3_SECRET_ACCESS_KEY, S3_ENDPOINT_URL
-from config import *
+from data_generation.training.config import *
 
 import boto3
 from botocore.exceptions import ClientError
